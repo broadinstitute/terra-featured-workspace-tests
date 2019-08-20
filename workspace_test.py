@@ -35,10 +35,15 @@ for item in res:
         print(ret.text)
         exit(1)
 
+breakOut = False
+while not breakOut:
+   res = api.list_submissions(clone_project, clone_name)
+   res = res.json()
+   terminal_states = set(["Succeeded", "Aborted", "Failed"])
+   for item in res:
+       if item["status"] in terminal_states:
+           breakOut = True
+   time.sleep(100)
 
-while True:
-    res = api.list_submissions(clone_project, clone_name)
-    pprint.pprint(res.json())
-    time.sleep(30) 
 
 
