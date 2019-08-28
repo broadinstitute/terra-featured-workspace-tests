@@ -1,7 +1,15 @@
 from datetime import datetime
 from firecloud import api
+
+# this will fail
 namespace = "fccredits-curium-coral-4194"
 workspace = "Germline-SNPs-Indels-GATK4-b37-EX06test"
+
+# # this will succeed
+# namespace = "fccredits-sodium-tan-9687"
+# workspace = "Sequence-Format-Conversion_2019-08-28-14-54-18"
+
+
 res = api.list_submissions(namespace, workspace)
 res = res.json()
 for item in res:
@@ -29,17 +37,22 @@ for item in res:
     
     print("End Results:")
     if Failed:
-        print(str(item["methodConfigurationName"]) + " has Failed. The error message is: \n \n -"  + "\n \n -".join(FailedMess))
+        print(str(item["methodConfigurationName"]) + " has failed. The error message is: \n \n -"  + "\n \n -".join(FailedMess))
         print("\n \n List of Links: - ")
-        print "\n-".join(Link)
+        print("\n-".join(Link))
     else:
-        print(str(item["methodConfigurationName"]) + " has ran Successfully.")
+        print(str(item["methodConfigurationName"]) + " has run successfully.")
         print("\n \n List of Links: - ")
-        print "\n-".join(Link)
+        print("\n-".join(Link))
     print("\n \n \n ")
 
 
-
+if Failed:
+    status_text = "FAILURE!"
+    status_color = "red"
+else:
+    status_text = "SUCCESS!"
+    status_color = "green"
 
 K =  datetime.today().strftime('%H:%M-%m/%d/%Y') + "<br>"
 
@@ -47,8 +60,9 @@ f = open('hello.html','w')
 
 message = """<html>
 <head></head>
-<body><p><center>Terra's Feature Workspace Report</center> <br>
-<br>
+<body><p><center><h1>Terra's Feature Workspace Report</h1>
+<h1><font color={status_color}>{status_text}</font></h1></center> 
+<br><br>
 
 Name for Feature Workspace:
 <br><br> The Workflows Tested:
@@ -60,6 +74,8 @@ Name for Feature Workspace:
 <br> Everything ran successfully!</p></body>
 </html>"""
 
-message = message.format(Ka = K)
+message = message.format(Ka = K, 
+                        status_color = status_color,
+                        status_text = status_text)
 f.write(message)
 f.close()
