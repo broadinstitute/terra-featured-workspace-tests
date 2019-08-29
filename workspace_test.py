@@ -6,16 +6,15 @@ with links to their Workflow report(s) on Terra.bio
 
 from firecloud import api
 from datetime import datetime
-# import pprint
 import json
 import time
 
 # Define project, workspace to test, and cloned workspace name
-clone_project = "fccredits-sodium-tan-9687" #"featured-workspace-testing"   # billing project
-original_name = "Sequence-Format-Conversion"                                # the workspace to test
-clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')                 # time of clone
-clone_name = original_name +'_' + clone_time                                # cloned name is the original name + current date/time
-error_message = ""                                                          # will be filled if there's an error
+clone_project = "featured-workspace-testing"                    # billing project
+original_name = "Sequence-Format-Conversion"                    # the workspace to test
+clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
+clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
+error_message = ""                                              # will be filled if there's an error
 
 # Clone the Featured Workspace
 res = api.clone_workspace("help-gatk",
