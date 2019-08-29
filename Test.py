@@ -1,81 +1,55 @@
-from datetime import datetime
-from firecloud import api
-
-# this will fail
-namespace = "fccredits-curium-coral-4194"
-workspace = "Germline-SNPs-Indels-GATK4-b37-EX06test"
-
-# # this will succeed
-# namespace = "fccredits-sodium-tan-9687"
-# workspace = "Sequence-Format-Conversion_2019-08-28-14-54-18"
+import os
+import argparse
+from workspace_test_report import *
 
 
-res = api.list_submissions(namespace, workspace)
-res = res.json()
-for item in res:
-    count = 0
-    Failed = False
-    FailedMess = []
-    Link = []
-    for i in api.get_submission(namespace, workspace, item["submissionId"]).json()["workflows"]:
-        count +=1
-        if "workflowId" in i: 
-            Link.append(str(count) + ". " + "https://job-manager.dsde-prod.broadinstitute.org/jobs/"+ str(i["workflowId"]))
-            resworkspace = api.get_workflow_metadata(namespace, workspace, item["submissionId"], i["workflowId"]).json()
-            if resworkspace["status"] == "Failed":
-                for failed in resworkspace["failures"]:
-                    for message in failed["causedBy"]:
-                        if str(message["message"]) not in FailedMess:
-                            FailedMess.append(str(count) + ". " + str(message["message"]))
-                        Failed = True
-        else:
-            if i["status"] == "Failed":
-                print(item["submissionId"])
-                if "No Workflow Id" not in FailedMess:
-                    FailedMess.append("No Workflow Id")
-                Failed = True  
-    
-    print("End Results:")
-    if Failed:
-        print(str(item["methodConfigurationName"]) + " has failed. The error message is: \n \n -"  + "\n \n -".join(FailedMess))
-        print("\n \n List of Links: - ")
-        print("\n-".join(Link))
-    else:
-        print(str(item["methodConfigurationName"]) + " has run successfully.")
-        print("\n \n List of Links: - ")
-        print("\n-".join(Link))
-    print("\n \n \n ")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument("--clone_name", type=str, help="name of cloned workspace")
+    parser.add_argument("--clone_project", type=str, default="featured-workspace-testing",
+                        help="project for cloned workspace")
+    parser.add_argument("--original_name", type=str, default="Sequence-Format-Conversion",
+                        help="name of workspace to clone")
+    parser.add_argument("--original_project", type=str, default="help-gatk",
+                        help="project for original workspace")
+    parser.add_argument("--do_report", action='store_true',
+                        help="run a report")
+    parser.add_argument("--do_submission", action='store_true',
+                        help="run the workflow submission")
+
+    args = parser.parse_args()
+    # print(args)
 
 
-if Failed:
-    status_text = "FAILURE!"
-    status_color = "red"
-else:
-    status_text = "SUCCESS!"
-    status_color = "green"
+    clone_name = args.clone_name # this is None unless you entered one
 
-K =  datetime.today().strftime('%H:%M-%m/%d/%Y') + "<br>"
+    if clone_name is None:
+        print("cloning "+args.original_name)
+        clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
+        print(clone_name)
 
-f = open('hello.html','w')
+    if args.do_submission:
+        print("running submission on "+clone_name)
+        run_workflow_submission(args.clone_project, clone_name)
 
-message = """<html>
-<head></head>
-<body><p><center><h1>Terra's Feature Workspace Report</h1>
-<h1><font color={status_color}>{status_text}</font></h1></center> 
-<br><br>
+    if args.do_report:
+        print("running report on "+clone_name)
+        namespace = args.clone_project
+        workspace = clone_name
 
-Name for Feature Workspace:
-<br><br> The Workflows Tested:
-<br><br> The Notebooks Tested:
+        # test_fail = False
+        # test_succeed = False
+        
+        # if test_fail:
+        #     # this will fail
+        #     namespace = "fccredits-curium-coral-4194"
+        #     workspace = "Germline-SNPs-Indels-GATK4-b37-EX06test"
 
-<br><br> {Ka} Cloning Workspace to:
-<br><br> {Ka} Running:
-<br><br> {Ka} ________ are all completed.
-<br> Everything ran successfully!</p></body>
-</html>"""
+        # if test_succeed:
+        #     # this will succeed
+        #     namespace = "fccredits-sodium-tan-9687"
+        #     workspace = "Sequence-Format-Conversion_2019-08-28-14-54-18"
 
-message = message.format(Ka = K, 
-                        status_color = status_color,
-                        status_text = status_text)
-f.write(message)
-f.close()
+        generate_workflow_report(namespace, workspace)
+        os.system("open hello.html")
