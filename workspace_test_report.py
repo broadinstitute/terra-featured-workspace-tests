@@ -1,9 +1,8 @@
 from datetime import datetime
-from firecloud import api
 import json
 import time
 from wflow_class import wflow
-
+from firecloud import api
 
 def clone_workspace(original_project, original_name, clone_project):
     """ clone a given workspace
@@ -102,41 +101,43 @@ def run_workflow_submission(clone_project, clone_name):
 
 
 def generate_workflow_report(namespace, workspace):
-
+    workflow_dict = {}
     res = api.list_submissions(namespace, workspace)
     res = res.json()
     for item in res:
         count = 0
         Failed = False
         FailedMess = []
-        Link = []
         for i in api.get_submission(namespace, workspace, item["submissionId"]).json()["workflows"]:
             count +=1
-            if "workflowId" in i: 
-                Link.append(str(count) + ". " + "https://job-manager.dsde-prod.broadinstitute.org/jobs/"+ str(i["workflowId"]))
+            if "workflowId" in i:
+                
                 resworkspace = api.get_workflow_metadata(namespace, workspace, item["submissionId"], i["workflowId"]).json()
+                mess_details = None
                 if resworkspace["status"] == "Failed":
                     for failed in resworkspace["failures"]:
                         for message in failed["causedBy"]:
                             if str(message["message"]) not in FailedMess:
-                                FailedMess.append(str(count) + ". " + str(message["message"]))
+                                mess_details = str(message["message"])
+                                FailedMess.append(str(count) + ". " + mess_details)
                             Failed = True
+                workflow_dict[i["workflowId"]]=wflow(wfid=i["workflowId"], 
+                                                name=item["methodConfigurationName"], 
+                                                entity="Not Yet", 
+                                                status=resworkspace["status"], 
+                                                message=mess_details)
             else:
                 if i["status"] == "Failed":
                     print(item["submissionId"])
                     if "No Workflow Id" not in FailedMess:
                         FailedMess.append("No Workflow Id")
-                    Failed = True  
-        
+                    Failed = True
+               
         print("End Results:")
         if Failed:
             print(str(item["methodConfigurationName"]) + " has failed. The error message is: \n \n -"  + "\n \n -".join(FailedMess))
-            print("\n \n List of Links: - ")
-            print("\n-".join(Link))
         else:
             print(str(item["methodConfigurationName"]) + " has run successfully.")
-            print("\n \n List of Links: - ")
-            print("\n-".join(Link))
         print("\n \n \n ")
 
 
@@ -148,7 +149,11 @@ def generate_workflow_report(namespace, workspace):
         status_color = "green"
 
     K =  datetime.today().strftime('%H:%M-%m/%d/%Y') + "<br>"
+    html_list = []
+    for items in workflow_dict.values():
+        html_list.append(items.get_HTML())
 
+    html_add = "<br><br>".join(html_list)
     f = open('hello.html','w')
 
     message = """<html>
@@ -160,15 +165,12 @@ def generate_workflow_report(namespace, workspace):
     Name for Feature Workspace:
     <br><br> The Workflows Tested:
     <br><br> The Notebooks Tested:
+    """ + html_add + """
 
-    <br><br> {Ka} Cloning Workspace to:
-    <br><br> {Ka} Running:
-    <br><br> {Ka} ________ are all completed.
-    <br> Everything ran successfully!</p></body>
+    </p></body>
     </html>"""
 
-    message = message.format(Ka = K, 
-                            status_color = status_color,
+    message = message.format(status_color = status_color,
                             status_text = status_text)
     f.write(message)
     f.close()
