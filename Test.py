@@ -13,17 +13,21 @@ if __name__ == "__main__":
                         help="name of workspace to clone")
     parser.add_argument("--original_project", type=str, default="help-gatk",
                         help="project for original workspace")
-    parser.add_argument("--do_report", action='store_true',
-                        help="run a report")
     parser.add_argument("--do_submission", action='store_true',
                         help="run the workflow submission")
+    parser.add_argument("--sleep_time", type=int, default=100,
+                        help="time to wait between checking whether the submissions are complete")
+    parser.add_argument("--test_fail", action='store_true',
+                        help="run a report on a failed submission")
 
     args = parser.parse_args()
     # print(args)
 
 
     clone_name = args.clone_name # this is None unless you entered one
-
+    if args.test_fail:
+        clone_name = "do not clone"
+        
     if clone_name is None:
         print("cloning "+args.original_name)
         clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
@@ -33,23 +37,20 @@ if __name__ == "__main__":
         print("running submission on "+clone_name)
         run_workflow_submission(args.clone_project, clone_name)
 
-    if args.do_report:
-        print("running report on "+clone_name)
-        namespace = args.clone_project
+ 
+    if args.test_fail:
+        # this submission has failures
+        project = "fccredits-curium-coral-4194"
+        workspace = "Germline-SNPs-Indels-GATK4-b37-EX06test"
+
+        # # this submission has failures and successes
+        # project = "featured-workspace-testing"
+        # workspace = "Germline-SNPs-Indels-GATK4-hg38_2019-08-20-14-11-56"
+    else:
+        project = args.clone_project
         workspace = clone_name
 
-        # test_fail = False
-        # test_succeed = False
-        
-        # if test_fail:
-        #     # this will fail
-        #     namespace = "fccredits-curium-coral-4194"
-        #     workspace = "Germline-SNPs-Indels-GATK4-b37-EX06test"
-
-        # if test_succeed:
-        #     # this will succeed
-        #     namespace = "fccredits-sodium-tan-9687"
-        #     workspace = "Sequence-Format-Conversion_2019-08-28-14-54-18"
-
-        generate_workflow_report(namespace, workspace)
-        os.system("open hello.html")
+    # run the report and open it
+    print("running report on "+clone_name)
+    html_output = generate_workflow_report(project, workspace)
+    os.system("open "+html_output)

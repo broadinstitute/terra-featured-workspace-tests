@@ -29,7 +29,9 @@ def clone_workspace(original_project, original_name, clone_project):
 
     return clone_name
 
-def run_workflow_submission(clone_project, clone_name):
+def run_workflow_submission(clone_project, clone_name, sleep_time=100):
+    """ note: default sleep time is 100 seconds
+    """
 
     # Get a list of workflows in the project
     res = api.list_workspace_configs(clone_project, clone_name, allRepos = True)
@@ -49,9 +51,9 @@ def run_workflow_submission(clone_project, clone_name):
             entityType = item["rootEntityType"]
         else:
             entityType = None
-        namespace = item["namespace"]   # billing project
+        project = item["namespace"]     # billing project
         name = item["name"]             # the name of the workflow
-        workflow_names.append(name) # will be deleted soon
+        workflow_names.append(name)     # will be deleted soon
 
         """question for Alex: is this next section necessary 
         or can we just set entityName to None if entityType is None? 
@@ -63,7 +65,7 @@ def run_workflow_submission(clone_project, clone_name):
             entityName = entities.json()[0]["name"]
         
         # create a submission to run for this workflow
-        ret = api.create_submission(clone_project, clone_name, namespace, name, entityName, entityType)
+        ret = api.create_submission(clone_project, clone_name, project, name, entityName, entityType)
         if ret.status_code != 201: # check for errors
             print(ret.text)
             exit(1)
@@ -74,8 +76,6 @@ def run_workflow_submission(clone_project, clone_name):
     finish_workflows = []   # will be a list of finished workflows
     finish_workflows_details = []
     terminal_states = set(["Done", "Aborted"])
-    # TODO: handle Aborted workflows
-    sleep_time = 100 # seconds to sleep between loops
 
     while not breakOut:
         # get the current list of submissions and their statuses
@@ -100,46 +100,74 @@ def run_workflow_submission(clone_project, clone_name):
 
 
 
-def generate_workflow_report(namespace, workspace):
-    workflow_dict = {}
-    res = api.list_submissions(namespace, workspace)
+def generate_workflow_report(project, workspace):
+    """ this will generate a failure/success report for each workflow in a workspace, 
+    only running on the most recent submission for each report.
+    """
+    workflow_dict = {} # this will collect all workflows, each of which contains entity_dict of entities for that workflow
+    res = api.list_submissions(project, workspace)
     res = res.json()
+
+    count = 0
+    Failed = False
+
     for item in res:
-        count = 0
-        Failed = False
+        # each item in res corresponds with a submission that may contain multiple workflows and entities
+        wf_name = item["methodConfigurationName"]
+        submission_id = item["submissionId"]
+        print("getting status and info for "+wf_name+" in submission "+submission_id)
+
+        sub_dict = {} # this will collect wflow classes for all entities for this workflow
+
         FailedMess = []
-        for i in api.get_submission(namespace, workspace, item["submissionId"]).json()["workflows"]:
-            count +=1
+
+        for i in api.get_submission(project, workspace, submission_id).json()["workflows"]:
+            # each i in here corresponds with a single workflow with a given entity
+            
+
+            if "workflowEntity" in i:
+                entity_name = i["workflowEntity"]["entityName"]
+            else:
+                entity_name = None
+
             if "workflowId" in i:
-                
-                resworkspace = api.get_workflow_metadata(namespace, workspace, item["submissionId"], i["workflowId"]).json()
+                wfid = i["workflowId"]
+                key = wfid
+
+                resworkspace = api.get_workflow_metadata(project, workspace, submission_id, wfid).json()
                 mess_details = None
-                if resworkspace["status"] == "Failed":
+                wf_status = resworkspace["status"]
+                if wf_status == "Failed":
                     for failed in resworkspace["failures"]:
                         for message in failed["causedBy"]:
-                            if str(message["message"]) not in FailedMess:
-                                mess_details = str(message["message"])
-                                FailedMess.append(str(count) + ". " + mess_details)
+                            mess_details = str(message["message"])
                             Failed = True
-                workflow_dict[i["workflowId"]]=wflow(wfid=i["workflowId"], 
-                                                name=item["methodConfigurationName"], 
-                                                entity="Not Yet", 
-                                                status=resworkspace["status"], 
-                                                message=mess_details)
+                # TODO: find whether it's possible to Abort but still have a workflow ID? if so, need to adjust this
+                
             else:
-                if i["status"] == "Failed":
-                    print(item["submissionId"])
-                    if "No Workflow Id" not in FailedMess:
-                        FailedMess.append("No Workflow Id")
-                    Failed = True
-               
-        print("End Results:")
-        if Failed:
-            print(str(item["methodConfigurationName"]) + " has failed. The error message is: \n \n -"  + "\n \n -".join(FailedMess))
-        else:
-            print(str(item["methodConfigurationName"]) + " has run successfully.")
-        print("\n \n \n ")
+                count +=1
+                wfid = None
+                key = "no_wfid_"+str(count)
 
+                if i["status"] == "Failed":
+                    wf_status = "Failed"
+                    mess_details = "No Workflow ID"
+                    Failed = True
+                elif i["status"] == "Aborted":
+                    wf_status = "Aborted"
+                    mess_details = "Aborted"
+                    Failed = True
+            
+            sub_dict[key]=wflow(workspace=workspace,
+                                project=project,
+                                wfid=wfid, 
+                                subid=submission_id,
+                                wfname=wf_name, 
+                                entity=entity_name, 
+                                status=wf_status, 
+                                message=mess_details)
+
+        workflow_dict[wf_name] = sub_dict
 
     if Failed:
         status_text = "FAILURE!"
@@ -148,24 +176,51 @@ def generate_workflow_report(namespace, workspace):
         status_text = "SUCCESS!"
         status_color = "green"
 
-    K =  datetime.today().strftime('%H:%M-%m/%d/%Y') + "<br>"
-    html_list = []
-    for items in workflow_dict.values():
-        html_list.append(items.get_HTML())
+    # make a list of the workflows
+    workflows_list = list(workflow_dict.keys())
+    print(workflows_list)
 
-    html_add = "<br><br>".join(html_list)
-    f = open('hello.html','w')
+    # make a list of the notebooks
+    notebooks_list = ["No notebooks tested"]
+
+    # generate detail text from workflows
+    html_text = ""
+    for wf in workflow_dict.keys():
+        wf_name = wf
+        html_text += "<h3>"+wf_name+"</h3>"
+        html_text += "<blockquote>"
+        sub_dict = workflow_dict[wf]
+        for sub in sub_dict.values():
+            html_text += sub.get_HTML()
+        html_text += "</blockquote>"
+
+    html_output = "/tmp/hello.html" #TODO make this nice
+
+    f = open(html_output,'w')
 
     message = """<html>
-    <head></head>
-    <body><p><center><h1>Terra's Feature Workspace Report</h1>
-    <h1><font color={status_color}>{status_text}</font></h1></center> 
-    <br><br>
+    <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+    </head>
+    <body style="font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD">
+    <p>
+    <center><div style="background-color:#82AA52; color:#FAFBFD; height:100px">
+    <h1>
+    <img src="https://app.terra.bio/static/media/logo-wShadow.c7059479.svg" alt="Terra rocks!" style="vertical-align: middle;" height="100">
+    <span style="vertical-align: middle;">
+    Terra's Featured Workspace Report</span></h1>
 
-    Name for Feature Workspace:
-    <br><br> The Workflows Tested:
-    <br><br> The Notebooks Tested:
-    """ + html_add + """
+    <h1><font color={status_color}>{status_text}</font></h1></center> <br><br>
+    
+    <br><br><big><b> Feature Workspace: </b>""" + workspace + """ </big>
+    <br><br><big><b> Feature Billing Project: </b>""" + project + """ </big>
+    <br><br><big><b> Workflows Tested: </b>""" + ", ".join(workflows_list) + """ </big>
+    <br><br><big><b> Notebooks Tested: </b>""" + ", ".join(notebooks_list) + """ </big>
+    <br>
+    <h2>Workflows:</h2>
+    <blockquote> """ + html_text + """ </blockquote>
+    
+    
+    </p>
 
     </p></body>
     </html>"""
@@ -175,4 +230,5 @@ def generate_workflow_report(namespace, workspace):
     f.write(message)
     f.close()
 
+    return html_output
 
