@@ -194,7 +194,7 @@ def generate_workflow_report(project, workspace):
             html_text += sub.get_HTML()
         html_text += "</blockquote>"
 
-    html_output = "/tmp/hello.html" #TODO make this nice
+    html_output = "/tmp/workspace_report.html"
 
     f = open(html_output,'w')
 
