@@ -153,8 +153,7 @@ def generate_workflow_report(project, workspace, html_output="/tmp/workspace_rep
                 if i["status"] == "Failed":
                     wf_status = "Failed"
                     # get the error message for why it failed
-                    mess_details = str(i["messages"])
-                    # mess_details = "No Workflow ID"
+                    mess_details = str(i["messages"])[1:-1]
                     Failed = True
                 elif i["status"] == "Aborted":
                     wf_status = "Aborted"
@@ -211,8 +210,8 @@ def generate_workflow_report(project, workspace, html_output="/tmp/workspace_rep
     # generate detail text from notebooks
     notebooks_text = ""
 
+    # open, generate, and write the html text for the report
     f = open(html_output,'w')
-
     message = """<html>
     <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
     </head>

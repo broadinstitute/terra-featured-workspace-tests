@@ -21,7 +21,7 @@ class wflow:
 
         if self.status == "Failed":
             status_color = "red"
-            error_message = "<br>" + str(self.message)
+            error_message = "<br>Error message: <font color=" + status_color + ">" + str(self.message) + "</font>"
         elif self.status == "Aborted":
             status_color = "orange"
             error_message = ""
@@ -34,7 +34,8 @@ class wflow:
         Workflow Id: {wfid}
         <br>Submission Id: {subid}
         <br>Entity Name: {entity}
-        <br>Status: <font color={status_color}>{status}{error_message}</font>
+        <br>Status: <font color={status_color}>{status}</font>
+        {error_message}
         <br><a href={link} target="_blank">Click here for more details</a>
         <br><br>
         """
