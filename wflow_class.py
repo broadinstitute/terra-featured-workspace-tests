@@ -35,7 +35,7 @@ class wflow:
         <br>Submission Id: {subid}
         <br>Entity Name: {entity}
         <br>Status: <font color={status_color}>{status}{error_message}</font>
-        <br><a href={link} target="_blank">Click Here For More Details</a>
+        <br><a href={link} target="_blank">Click here for more details</a>
         <br><br>
         """
         message_html = message_html.format(wfname = self.wfname, 

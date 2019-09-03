@@ -19,6 +19,8 @@ if __name__ == "__main__":
                         help="time to wait between checking whether the submissions are complete")
     parser.add_argument("--test_fail", action='store_true',
                         help="run a report on a failed submission")
+    parser.add_argument("--html_output", type=str, default="/tmp/workspace_report.html",
+                        help="address to create html doc for report")
 
     args = parser.parse_args()
     # print(args)
@@ -51,6 +53,6 @@ if __name__ == "__main__":
         workspace = clone_name
 
     # run the report and open it
-    print("running report on "+clone_name)
-    html_output = generate_workflow_report(project, workspace)
+    print("running report on "+workspace)
+    html_output = generate_workflow_report(project, workspace, args.html_output)
     os.system("open "+html_output)

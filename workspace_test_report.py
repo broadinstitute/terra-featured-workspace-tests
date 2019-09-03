@@ -30,7 +30,8 @@ def clone_workspace(original_project, original_name, clone_project):
     return clone_name
 
 def run_workflow_submission(clone_project, clone_name, sleep_time=100):
-    """ note: default sleep time is 100 seconds
+    """ note: default sleep time (time to wait between checking whether 
+    the submissions have finished) is 100 seconds
     """
 
     # Get a list of workflows in the project
@@ -43,22 +44,17 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
 
     # If cloning was successful, run through the workspace and create a submission for each workflow
     res = res.json()    # convert to json
-    workflow_names = [] # store the names of the workflows
     for item in res:  # for each item (workflow)
         
-        # identify the type of data being used by this workflow
+        # identify the type of data (entity) being used by this workflow, if any
         if "rootEntityType" in item:
             entityType = item["rootEntityType"]
         else:
             entityType = None
         project = item["namespace"]     # billing project
         name = item["name"]             # the name of the workflow
-        workflow_names.append(name)     # will be deleted soon
 
-        """question for Alex: is this next section necessary 
-        or can we just set entityName to None if entityType is None? 
-        if entityType is None, can entityName ever not be None?
-        """
+        # get and store the name of the data (entity) being used, if any
         entities = api.get_entities(clone_project, clone_name, entityType)
         entityName = None
         if len(entities.json()) != 0:
@@ -71,13 +67,13 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
             exit(1)
 
     # wait for the submission to finish (i.e. submission status is Done or Aborted)
-    breakOut = False        # flag for being done
+    break_out = False       # flag for being done
     count = 0               # count how many submissions are done; to check if all are done
     finish_workflows = []   # will be a list of finished workflows
     finish_workflows_details = []
     terminal_states = set(["Done", "Aborted"])
 
-    while not breakOut:
+    while not break_out:
         # get the current list of submissions and their statuses
         res = api.list_submissions(clone_project, clone_name).json()
         
@@ -89,22 +85,23 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
                     finish_workflows.append(item["methodConfigurationName"])
                     finish_workflows_details.append(details)
             if count == len(res): # if all workflows are done, you're done!
-                breakOut = True
-                sleep_time = 0.5
+                break_out = True
+                sleep_time = 0
         
-        print(datetime.today().strftime('%H:%M')+ " - finished workflows:" + str(finish_workflows)) # just a sanity check / progress meter
-        # if not all workflows are done yet, reset the count and wait 100 seconds
+        # print progress
+        print(datetime.today().strftime('%H:%M')+ " - finished " + str(count) + " of " + str(len(res)) + " workflows:" + str(finish_workflows))
+        
+        # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
         count = 0 
         time.sleep(sleep_time)
 
 
-
-
-def generate_workflow_report(project, workspace):
-    """ this will generate a failure/success report for each workflow in a workspace, 
-    only running on the most recent submission for each report.
+def generate_workflow_report(project, workspace, html_output="/tmp/workspace_report.html"):
+    """ generate a failure/success report for each workflow in a workspace, 
+    only reporting on the most recent submission for each report.
+    this returns a string html_output that's currently not modified by this function but might be in future!
     """
-    workflow_dict = {} # this will collect all workflows, each of which contains entity_dict of entities for that workflow
+    workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = api.list_submissions(project, workspace)
     res = res.json()
 
@@ -112,31 +109,35 @@ def generate_workflow_report(project, workspace):
     Failed = False
 
     for item in res:
-        # each item in res corresponds with a submission that may contain multiple workflows and entities
+        # each item in res corresponds with a submission for one workflow that may contain multiple entities
         wf_name = item["methodConfigurationName"]
         submission_id = item["submissionId"]
         print("getting status and info for "+wf_name+" in submission "+submission_id)
 
-        sub_dict = {} # this will collect wflow classes for all entities for this workflow
+        sub_dict = {} # this will collect wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
 
         FailedMess = []
 
         for i in api.get_submission(project, workspace, submission_id).json()["workflows"]:
             # each i in here corresponds with a single workflow with a given entity
             
-
+            # if this workflow has an entity, store its name
             if "workflowEntity" in i:
                 entity_name = i["workflowEntity"]["entityName"]
             else:
                 entity_name = None
 
+            # if the workflow has a workflowId, meaning the submission completed, then get and store it
             if "workflowId" in i:
                 wfid = i["workflowId"]
-                key = wfid
+                key = wfid                  # use the workflowId as the key for the dictionary
 
+                # get more details from the workflow: status, error message
                 resworkspace = api.get_workflow_metadata(project, workspace, submission_id, wfid).json()
                 mess_details = None
                 wf_status = resworkspace["status"]
+
+                # in case of failure, pull out the error message
                 if wf_status == "Failed":
                     for failed in resworkspace["failures"]:
                         for message in failed["causedBy"]:
@@ -144,20 +145,27 @@ def generate_workflow_report(project, workspace):
                             Failed = True
                 # TODO: find whether it's possible to Abort but still have a workflow ID? if so, need to adjust this
                 
-            else:
-                count +=1
-                wfid = None
-                key = "no_wfid_"+str(count)
+            else: # if no workflowId
+                count +=1                       # count of workflows with no workflowId
+                wfid = None                     # store the wfid as None, since there is none
+                key = "no_wfid_"+str(count)     # create a key to use in the dict
 
                 if i["status"] == "Failed":
                     wf_status = "Failed"
-                    mess_details = "No Workflow ID"
+                    # get the error message for why it failed
+                    mess_details = str(i["messages"])
+                    # mess_details = "No Workflow ID"
                     Failed = True
                 elif i["status"] == "Aborted":
                     wf_status = "Aborted"
                     mess_details = "Aborted"
                     Failed = True
+                else: # should probably never get here, but just in case
+                    wf_status = i["status"]
+                    mess_dtails = "unrecognized status"
+                    Failed = True
             
+            # store all this information in the dictionary containing workflow classes
             sub_dict[key]=wflow(workspace=workspace,
                                 project=project,
                                 wfid=wfid, 
@@ -169,6 +177,12 @@ def generate_workflow_report(project, workspace):
 
         workflow_dict[wf_name] = sub_dict
 
+
+
+    ### the rest of this function sets up the html report
+    # probably TODO: make the report its own function
+    
+    # if there were ANY failures
     if Failed:
         status_text = "FAILURE!"
         status_color = "red"
@@ -184,17 +198,18 @@ def generate_workflow_report(project, workspace):
     notebooks_list = ["No notebooks tested"]
 
     # generate detail text from workflows
-    html_text = ""
+    workflows_text = ""
     for wf in workflow_dict.keys():
         wf_name = wf
-        html_text += "<h3>"+wf_name+"</h3>"
-        html_text += "<blockquote>"
+        workflows_text += "<h3>"+wf_name+"</h3>"
+        workflows_text += "<blockquote>"
         sub_dict = workflow_dict[wf]
         for sub in sub_dict.values():
-            html_text += sub.get_HTML()
-        html_text += "</blockquote>"
-
-    html_output = "/tmp/workspace_report.html"
+            workflows_text += sub.get_HTML()
+        workflows_text += "</blockquote>"
+    
+    # generate detail text from notebooks
+    notebooks_text = ""
 
     f = open(html_output,'w')
 
@@ -207,19 +222,20 @@ def generate_workflow_report(project, workspace):
     <h1>
     <img src="https://app.terra.bio/static/media/logo-wShadow.c7059479.svg" alt="Terra rocks!" style="vertical-align: middle;" height="100">
     <span style="vertical-align: middle;">
-    Terra's Featured Workspace Report</span></h1>
+    Featured Workspace Report</span></h1>
 
     <h1><font color={status_color}>{status_text}</font></h1></center> <br><br>
     
-    <br><br><big><b> Feature Workspace: </b>""" + workspace + """ </big>
-    <br><br><big><b> Feature Billing Project: </b>""" + project + """ </big>
+    <br><br><big><b> Featured Workspace: </b>""" + workspace + """ </big>
+    <br><big><b> Billing Project: </b>""" + project + """ </big>
     <br><br><big><b> Workflows Tested: </b>""" + ", ".join(workflows_list) + """ </big>
-    <br><br><big><b> Notebooks Tested: </b>""" + ", ".join(notebooks_list) + """ </big>
+    <br><big><b> Notebooks Tested: </b>""" + ", ".join(notebooks_list) + """ </big>
     <br>
     <h2>Workflows:</h2>
-    <blockquote> """ + html_text + """ </blockquote>
-    
-    
+    <blockquote> """ + workflows_text + """ </blockquote>
+    <br>
+    <h2>Notebooks:</h2>
+    <blockquote> """ + notebooks_text + """ </blockquote>
     </p>
 
     </p></body>
