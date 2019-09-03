@@ -21,6 +21,8 @@ if __name__ == "__main__":
                         help="run a report on a failed submission")
     parser.add_argument("--html_output", type=str, default="/tmp/workspace_report.html",
                         help="address to create html doc for report")
+    parser.add_argument("--test_notebook", action='store_true',
+                        help="test notebooks")
 
     args = parser.parse_args()
     # print(args)
@@ -29,16 +31,26 @@ if __name__ == "__main__":
     clone_name = args.clone_name # this is None unless you entered one
     if args.test_fail:
         clone_name = "do not clone"
+    if args.test_notebook:
+        clone_name = "do not clone"
         
     if clone_name is None:
-        print("cloning "+args.original_name)
         clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
         print(clone_name)
 
     if args.do_submission:
-        print("running submission on "+clone_name)
         run_workflow_submission(args.clone_project, clone_name)
 
+    if args.test_notebook: # work in progress!
+        # # # clone a workspace that has notebooks
+        # args.original_project = "fc-product-demo"
+        # args.original_name = "Terra_Quickstart_Workspace"
+        # clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
+        
+        clone_name = "Terra_Quickstart_Workspace_2019-09-03-15-19-28"
+
+        run_workflow_submission(args.clone_project, clone_name)
+        run_notebook_submission(args.clone_project, clone_name)
  
     if args.test_fail:
         # this submission has failures
@@ -53,6 +65,5 @@ if __name__ == "__main__":
         workspace = clone_name
 
     # run the report and open it
-    print("running report on "+workspace)
-    html_output = generate_workflow_report(project, workspace, args.html_output)
+    html_output = generate_workspace_report(project, workspace, args.html_output)
     os.system("open "+html_output)

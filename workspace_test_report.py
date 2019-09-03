@@ -7,7 +7,8 @@ from firecloud import api
 def clone_workspace(original_project, original_name, clone_project):
     """ clone a given workspace
     """
- 
+    print("cloning " + original_name)
+
     # define the name of the cloned workspace
     clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
     clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
@@ -22,27 +23,28 @@ def clone_workspace(original_project, original_name, clone_project):
 
     # Catch if the Featured Workspace didn't clone
     if res.status_code != 201:
-        error_message = "Not Cloning"
+        error_message = "Cloning failed"
         print(error_message)
         print(res.text)
         exit(1)
 
     return clone_name
 
-def run_workflow_submission(clone_project, clone_name, sleep_time=100):
+def run_workflow_submission(project, workspace, sleep_time=100):
     """ note: default sleep time (time to wait between checking whether 
     the submissions have finished) is 100 seconds
     """
+    print("running workflow submission on "+workspace)
 
     # Get a list of workflows in the project
-    res = api.list_workspace_configs(clone_project, clone_name, allRepos = True)
+    res = api.list_workspace_configs(project, workspace, allRepos = True)
+
     # Catch if the cloned feature workspace had an error with loading
     if res.status_code != 200:
-        error_message = res.text
-        print(error_message)
+        print(res.text)
         exit(1)
 
-    # If cloning was successful, run through the workspace and create a submission for each workflow
+    # run through the workspace and create a submission for each workflow
     res = res.json()    # convert to json
     for item in res:  # for each item (workflow)
         
@@ -51,17 +53,17 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
             entityType = item["rootEntityType"]
         else:
             entityType = None
-        project = item["namespace"]     # billing project
-        name = item["name"]             # the name of the workflow
+        project_orig = item["namespace"]     # original billing project
+        name_orig = item["name"]             # the name of the original workflow
 
         # get and store the name of the data (entity) being used, if any
-        entities = api.get_entities(clone_project, clone_name, entityType)
+        entities = api.get_entities(project, workspace, entityType)
         entityName = None
         if len(entities.json()) != 0:
             entityName = entities.json()[0]["name"]
-        
+
         # create a submission to run for this workflow
-        ret = api.create_submission(clone_project, clone_name, project, name, entityName, entityType)
+        ret = api.create_submission(project, workspace, project_orig, name_orig, entityName, entityType)
         if ret.status_code != 201: # check for errors
             print(ret.text)
             exit(1)
@@ -75,7 +77,7 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
 
     while not break_out:
         # get the current list of submissions and their statuses
-        res = api.list_submissions(clone_project, clone_name).json()
+        res = api.list_submissions(project, workspace).json()
         
         for item in res: # for each workflow
             if item["status"] in terminal_states: # if the workflow status is Done or Aborted
@@ -95,12 +97,25 @@ def run_workflow_submission(clone_project, clone_name, sleep_time=100):
         count = 0 
         time.sleep(sleep_time)
 
+def run_notebook_submission(project, workspace, sleep_time=100):
+    """ note: default sleep time (time to wait between checking whether 
+    the submissions have finished) is 100 seconds
+    """
 
-def generate_workflow_report(project, workspace, html_output="/tmp/workspace_report.html"):
+    print("running notebook submission on "+workspace)
+    print("note: this does nothing with notebooks yet.")
+
+    # get a list of notebooks in the project
+    # run each notebook
+    # figure out when it's done
+
+def generate_workspace_report(project, workspace, html_output="/tmp/workspace_report.html"):
     """ generate a failure/success report for each workflow in a workspace, 
     only reporting on the most recent submission for each report.
     this returns a string html_output that's currently not modified by this function but might be in future!
     """
+    print("generating workspace report for "+workspace)
+
     workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = api.list_submissions(project, workspace)
     res = res.json()
@@ -143,7 +158,9 @@ def generate_workflow_report(project, workspace, html_output="/tmp/workspace_rep
                         for message in failed["causedBy"]:
                             mess_details = str(message["message"])
                             Failed = True
-                # TODO: find whether it's possible to Abort but still have a workflow ID? if so, need to adjust this
+                elif wf_status == "Aborted":
+                    mess_details = "Aborted"
+                    Failed = True
                 
             else: # if no workflowId
                 count +=1                       # count of workflows with no workflowId
@@ -191,7 +208,6 @@ def generate_workflow_report(project, workspace, html_output="/tmp/workspace_rep
 
     # make a list of the workflows
     workflows_list = list(workflow_dict.keys())
-    print(workflows_list)
 
     # make a list of the notebooks
     notebooks_list = ["No notebooks tested"]
