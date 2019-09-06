@@ -11,10 +11,13 @@ This code should be compatible with Python2 and Python3.
     - the report currently is printed to a temporary local html file
 
 The above steps can be performed as a whole or individually/separately, depending on the input arguments to Test.py. For example:
+
 **To run the full sequence**, enter:
 > python3 Test.py --original_name [name of workspace to clone] --original_project [project of workspace to clone] --do_submission -v
+
 **To run new workflow submissions on a cloned workspace**, enter:
 > python3 Test.py --clone_name [name of cloned workspace] --do_submission -v
+
 **To run a report on completed workflow submissions**, enter:
 > python3 Test.py --clone_name [name of cloned workspace] -v
 
