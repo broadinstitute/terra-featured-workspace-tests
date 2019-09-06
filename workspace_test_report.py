@@ -173,6 +173,10 @@ def generate_workspace_report(project, workspace, html_output="/tmp/workspace_re
 
     workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = api.list_submissions(project, workspace)
+    if res.status_code != 200:
+        print(res.text)
+        exit(1)
+
     res = res.json()
 
     count = 0
