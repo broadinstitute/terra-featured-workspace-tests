@@ -3,11 +3,15 @@ import json
 import time
 from wflow_class import wflow
 from firecloud import api
+# import pprint
 
-def clone_workspace(original_project, original_name, clone_project):
+
+
+def clone_workspace(original_project, original_name, clone_project, verbose=False):
     """ clone a given workspace
     """
-    print("cloning " + original_name)
+    if verbose:
+        print("cloning " + original_name)
 
     # define the name of the cloned workspace
     clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
@@ -30,11 +34,18 @@ def clone_workspace(original_project, original_name, clone_project):
 
     return clone_name
 
-def run_workflow_submission(project, workspace, sleep_time=100):
+def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, verbose=False):
     """ note: default sleep time (time to wait between checking whether 
     the submissions have finished) is 100 seconds
     """
-    print("running workflow submission on "+workspace)
+    if verbose:
+        print("running workflow submissions on "+workspace)
+    
+    # # for troubleshooting
+    # pp = pprint.PrettyPrinter(indent=4)
+    
+    # terminal states
+    terminal_states = set(["Done", "Aborted"])
 
     # Get a list of workflows in the project
     res = api.list_workspace_configs(project, workspace, allRepos = True)
@@ -44,7 +55,8 @@ def run_workflow_submission(project, workspace, sleep_time=100):
         print(res.text)
         exit(1)
 
-    # run through the workspace and create a submission for each workflow
+    # run through the workflows and get information to create submissions for each workflow
+    submissions = {}    # dict to store info about submissions
     res = res.json()    # convert to json
     for item in res:  # for each item (workflow)
         
@@ -53,8 +65,8 @@ def run_workflow_submission(project, workspace, sleep_time=100):
             entityType = item["rootEntityType"]
         else:
             entityType = None
-        project_orig = item["namespace"]     # original billing project
-        name_orig = item["name"]             # the name of the original workflow
+        project_orig = item["namespace"]    # original billing project
+        wf_name = item["name"]              # the name of the workflow
 
         # get and store the name of the data (entity) being used, if any
         entities = api.get_entities(project, workspace, entityType)
@@ -62,18 +74,58 @@ def run_workflow_submission(project, workspace, sleep_time=100):
         if len(entities.json()) != 0:
             entityName = entities.json()[0]["name"]
 
+        # create dictionary of inputs for api.create_submission - TODO: this could be a class?
+        submission_input = {"project":project,
+                            "workspace":workspace,
+                            "project_orig":project_orig,
+                            "wf_name":wf_name,
+                            "entity_name":entityName,
+                            "entity_type":entityType}
+        submissions[wf_name] = submission_input
+
+    workflow_names = list(submissions.keys())
+    workflow_names.sort()
+
+    for wf_name in workflow_names:
+        wf = submissions[wf_name]
+
         # create a submission to run for this workflow
-        ret = api.create_submission(project, workspace, project_orig, name_orig, entityName, entityType)
+        ret = api.create_submission(wf["project"], 
+                                    wf["workspace"], 
+                                    wf["project_orig"], 
+                                    wf["wf_name"], 
+                                    wf["entity_name"], 
+                                    wf["entity_type"])
+
+        if verbose:
+            print("submitted "+wf_name)
+
         if ret.status_code != 201: # check for errors
             print(ret.text)
             exit(1)
+
+        # if the workflows must be run sequentially, wait for each to finish
+        if do_order:
+            ret = ret.json()
+            submissionId = ret["submissionId"]
+            
+            break_out = False
+            while not break_out:
+                sub_res = api.get_submission(project, workspace, submissionId).json()
+                submission_status = sub_res["status"]
+                if verbose:
+                    print(" " +datetime.today().strftime('%H:%M')+ " status: "+ submission_status)
+                if submission_status in terminal_states:
+                    break_out = True
+                else:
+                    time.sleep(sleep_time)
+
 
     # wait for the submission to finish (i.e. submission status is Done or Aborted)
     break_out = False       # flag for being done
     count = 0               # count how many submissions are done; to check if all are done
     finish_workflows = []   # will be a list of finished workflows
     finish_workflows_details = []
-    terminal_states = set(["Done", "Aborted"])
 
     while not break_out:
         # get the current list of submissions and their statuses
@@ -90,31 +142,34 @@ def run_workflow_submission(project, workspace, sleep_time=100):
                 break_out = True
                 sleep_time = 0
         
-        # print progress
-        print(datetime.today().strftime('%H:%M')+ " - finished " + str(count) + " of " + str(len(res)) + " workflows:" + str(finish_workflows))
+        if verbose:
+            # print progress
+            print(datetime.today().strftime('%H:%M')+ " - finished " + str(count) + " of " + str(len(res)) + " workflows:" + str(finish_workflows))
         
         # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
         count = 0 
         time.sleep(sleep_time)
 
-def run_notebook_submission(project, workspace, sleep_time=100):
+def run_notebook_submission(project, workspace, sleep_time=100, verbose=False):
     """ note: default sleep time (time to wait between checking whether 
     the submissions have finished) is 100 seconds
     """
 
-    print("running notebook submission on "+workspace)
-    print("note: this does nothing with notebooks yet.")
+    if verbose:
+        print("running notebook submission on "+workspace)
+        print("note: this does nothing with notebooks yet.")
 
     # get a list of notebooks in the project
     # run each notebook
     # figure out when it's done
 
-def generate_workspace_report(project, workspace, html_output="/tmp/workspace_report.html"):
+def generate_workspace_report(project, workspace, html_output="/tmp/workspace_report.html", verbose=False):
     """ generate a failure/success report for each workflow in a workspace, 
     only reporting on the most recent submission for each report.
     this returns a string html_output that's currently not modified by this function but might be in future!
     """
-    print("generating workspace report for "+workspace)
+    if verbose:
+        print("generating workspace report for "+workspace)
 
     workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = api.list_submissions(project, workspace)
@@ -127,7 +182,8 @@ def generate_workspace_report(project, workspace, html_output="/tmp/workspace_re
         # each item in res corresponds with a submission for one workflow that may contain multiple entities
         wf_name = item["methodConfigurationName"]
         submission_id = item["submissionId"]
-        print("getting status and info for "+wf_name+" in submission "+submission_id)
+        if verbose:
+            print("getting status and info for "+wf_name+" in submission "+submission_id)
 
         sub_dict = {} # this will collect wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
 
