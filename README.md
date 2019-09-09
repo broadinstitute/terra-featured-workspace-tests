@@ -13,60 +13,60 @@ This code should be compatible with Python2 and Python3.
 The above steps can be performed as a whole or individually/separately, depending on the input arguments to Test.py. For example:
 
 **To run the full sequence**, enter:
-> python3 Test.py --original_name [name of workspace to clone] --original_project [project of workspace to clone] --do_submission -v
+`python3 Test.py --original_name [name of workspace to clone] --original_project [project of workspace to clone] --do_submission -v`
 
 **To run new workflow submissions on a cloned workspace**, enter:
-> python3 Test.py --clone_name [name of cloned workspace] --do_submission -v
+`python3 Test.py --clone_name [name of cloned workspace] --do_submission -v`
 
 **To run a report on completed workflow submissions**, enter:
-> python3 Test.py --clone_name [name of cloned workspace] -v
+`python3 Test.py --clone_name [name of cloned workspace] -v`
 
 
 ### Input argument info & defaults:
---clone_name 
+`--clone_name` 
 - this allows you to specify a workspace that's already been cloned; if not specified, then the workspace will be freshly cloned
 - no default
 
---clone_project 
+`--clone_project` 
 - this should not need to be changed
 - default="featured-workspace-testing"
 
---original_name 
+`--original_name` 
 - specify the workspace to be tested
 - default="Sequence-Format-Conversion"
 
---original_project 
+`--original_project` 
 - specify the project of the workspace to be tested
 - default="help-gatk"
 
 
---do_submission 
+`--do_submission` 
 - run the workflows
 - default=False
 
---do_order
+`--do_order`
 - run workflows sequentially in order (waiting for one to finish before submitting the next) 
 - default=False
 
---sleep_time 
+`--sleep_time` 
 - time (in seconds) to wait before checking whether a submission has completed. for workflows that take a long time, this could be set to much longer
 - default=100
 
---html_output 
+`--html_output` 
 - path to write the report
 - default="/tmp/workspace_report.html"
 
 
---test_notebook 
+`--test_notebook` 
 - a test for running notebooks - currently not working
 - default=False 
 
---test_fail 
+`--test_fail` 
 - a test to create a report from a workspace that has failures
 - default=False
 
 
---verbose, -v 
+`--verbose, -v` 
 - flag to print out progress text and extra info in the terminal
 - default=False
 
