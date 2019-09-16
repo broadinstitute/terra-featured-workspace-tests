@@ -51,7 +51,7 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     if type(bucket_files) == bytes:
         bucket_files = bucket_files.decode().split('\n')
     if verbose:
-        print("Notebooks copied")
+        print('Notebooks copied')
 
     return clone_name
 
@@ -308,7 +308,7 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
     # make a list of the notebooks
     notebooks_list = get_notebook(project, workspace)
     if len(notebooks_list) == 0:
-        notebooks_list = ["No notebooks in workspace"]
+        notebooks_list = ['No notebooks in workspace']
     
     # generate detail text from workflows
     workflows_text = ''
