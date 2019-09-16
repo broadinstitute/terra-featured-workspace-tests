@@ -31,4 +31,3 @@ if len(notebook_files) == 0:
     print("Workspace has no notebooks")
 else: 
     print('\n'.join(notebook_files))
-#print(fapi.list_entity_types("featured-workspace-testing", "Terra_Quickstart_Workspace_MORGAN_manualclone").json())
