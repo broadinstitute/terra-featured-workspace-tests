@@ -65,7 +65,6 @@ The above steps can be performed as a whole or individually/separately, dependin
 - a test to create a report from a workspace that has failures
 - default=False
 
-
 `--verbose, -v` 
 - flag to print out progress text and extra info in the terminal
 - default=False
