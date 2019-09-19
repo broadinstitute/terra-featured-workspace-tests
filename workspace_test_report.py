@@ -1,7 +1,7 @@
 from datetime import datetime
 import json
 import time
-from wflow_class import wflow
+from wflow_class import Wflow
 from firecloud import api as fapi
 import subprocess
 
@@ -250,7 +250,7 @@ def generate_workspace_report(project, workspace, base_path, verbose=False):
         if verbose:
             print(' getting status and info for '+wf_name+' in submission '+submission_id)
 
-        sub_dict = {} # this will collect wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
+        sub_dict = {} # this will collect Wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
 
         FailedMess = []
 
@@ -303,7 +303,7 @@ def generate_workspace_report(project, workspace, base_path, verbose=False):
                     Failed = True
             
             # store all this information in the dictionary containing workflow classes
-            sub_dict[key]=wflow(workspace=workspace,
+            sub_dict[key]=Wflow(workspace=workspace,
                                 project=project,
                                 wfid=wfid, 
                                 subid=submission_id,
