@@ -171,32 +171,45 @@ def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, 
         count = 0 
         time.sleep(sleep_time)
 
-def get_notebook(project, workspace, verbose=False):
-    '''
-        Geting the list of notebooks in the workspace
+def get_notebook(project, workspace, ipynb_only=True, verbose=False):
+    ''' get a list of notebooks (if ipynb_only = True) or everything in the 
+    notebooks folder (if ipynb_only = False) in the workspace
     '''
     res = fapi.get_workspace(project, workspace)
     fapi._check_response_code(res, 200)
     workspace = res.json()
     bucket = workspace['workspace']['bucketName']
 
-    # # Now run a gsutil ls to list files present in the bucket
-    gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
-    bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-    # Check output produces a string in Py2, Bytes in Py3, so decode if necessary
-    if type(bucket_files) == bytes:
-        bucket_files = bucket_files.decode().split('\n')
     notebook_files = []
 
-    for f in bucket_files:
-        if 'notebook' in f:
-            f = f.split('/')[-1]
-            notebook_files.append(f)
+    # check if bucket is empty
+    gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
+    bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+    if len(bucket_files)>0: # if the bucket isn't empty
+        # list files present in the bucket
+        gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
+        bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+        
+        # check output produces a string in Py2, Bytes in Py3, so decode if necessary
+        if type(bucket_files) == bytes:
+            bucket_files = bucket_files.decode().split('\n')
+
+        if ipynb_only:
+            keyword = '.ipynb'       # returns only .ipynb files
+        else:
+            keyword = 'notebooks/'   # returns all files in notebooks/ folder
+
+        for f in bucket_files:
+            if keyword in f:
+                f = f.split('/')[-1]
+                notebook_files.append(f)
+    
     if verbose:
         if len(notebook_files) == 0:
             print('Workspace has no notebooks')
         else: 
             print('\n'.join(notebook_files))
+    
     return notebook_files
 
 def generate_workspace_report(project, workspace, html_output='/tmp/workspace_report.html', verbose=False):
