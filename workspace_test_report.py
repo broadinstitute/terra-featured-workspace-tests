@@ -313,7 +313,8 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
 
     ### the rest of this function sets up the html report
     # probably TODO: make the report its own function
-    
+    workspace_link = 'https://app.terra.bio/#workspaces/' + project + '/' + workspace + '/job_history'
+
     # if there were ANY failures
     if Failed:
         status_text = 'FAILURE!'
@@ -359,10 +360,11 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
 
     <h1><font color={status_color}>{status_text}</font></h1></center> <br><br>
     
-    <br><br><big><b> Featured Workspace: </b>''' + workspace + ''' </big>
-    <br><big><b> Billing Project: </b>''' + project + ''' </big>
-    <br><br><big><b> Workflows Tested: </b>''' + ', '.join(workflows_list) + ''' </big>
-    <br><big><b> Notebooks Tested: </b>''' + ', '.join(notebooks_list) + ''' </big>
+    <br><br><h2><b> Featured Workspace: </b>
+    <a href='''+workspace_link+''' target='_blank'>''' + workspace + ''' </a></h2>
+    <big><b> Billing Project: </b>''' + project + ''' </big>
+    <br><br><big><b> Workflows: </b>''' + ', '.join(workflows_list) + ''' </big>
+    <br><big><b> Notebooks: </b>''' + ', '.join(notebooks_list) + ''' </big>
     <br>
     <h2>Workflows:</h2>
     <blockquote> ''' + workflows_text + ''' </blockquote>
