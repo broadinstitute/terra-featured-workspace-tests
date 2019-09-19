@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 
 @dataclass
-class wflow:
+class Wflow:
     '''Class for keeping track of info for Terra workflows.'''
     workspace: str      # workspace name
     project: str        # billing project
@@ -55,9 +55,9 @@ class wflow:
 
 if __name__ == '__main__':
     workflow_dict = {}
-    workflow_dict['1']=wflow(wfid='1', project='project', workspace='workspace', subid='a', wfname='first', entity='entity', status='Failed', message='None')
-    workflow_dict['2']=wflow(wfid='2', project='project', workspace='workspace', subid='b', wfname='second', entity='entity', status='Success')
-    workflow_dict['3']=wflow(wfid='3', project='project', workspace='workspace', subid='c', wfname='third', entity='entity', status='Failed', message='Yes')
+    workflow_dict['1']=Wflow(wfid='1', project='project', workspace='workspace', subid='a', wfname='first', entity='entity', status='Failed', message='None')
+    workflow_dict['2']=Wflow(wfid='2', project='project', workspace='workspace', subid='b', wfname='second', entity='entity', status='Success')
+    workflow_dict['3']=Wflow(wfid='3', project='project', workspace='workspace', subid='c', wfname='third', entity='entity', status='Failed', message='Yes')
     html_list = []
     for items in workflow_dict.values():
         html_list.append(items.get_HTML())
