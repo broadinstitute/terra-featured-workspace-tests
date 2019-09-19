@@ -185,7 +185,7 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     # get the bucket for this workspace
     bucket = get_ws_bucket(project, workspace)
 
-    notebook_files = []
+    notebooks_list = []
 
     # check if bucket is empty
     gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
@@ -211,15 +211,15 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
         for f in bucket_files:
             if keyword in f:
                 f = f.split('/')[-1]
-                notebook_files.append(f)
+                notebooks_list.append(f)
     
     if verbose:
-        if len(notebook_files) == 0:
+        if len(notebooks_list) == 0:
             print('Workspace has no notebooks')
         else: 
-            print('\n'.join(notebook_files))
+            print('\n'.join(notebooks_list))
     
-    return notebook_files
+    return notebooks_list
 
 
 def generate_workspace_report(project, workspace, html_output='/tmp/workspace_report.html', verbose=False):
