@@ -42,7 +42,7 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     original_bucket = get_ws_bucket(original_project, original_name)
     clone_bucket = get_ws_bucket(clone_project, clone_name)
     
-    # TODO: check if this breaks if original_bucket is empty; also check if this is supposed to return something because it currently does not
+    # TODO: check if the gsutil cp command is supposed to return something because it currently does not
     if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the bucket isn't empty
         gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
         bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
