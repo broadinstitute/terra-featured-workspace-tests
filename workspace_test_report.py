@@ -6,7 +6,16 @@ from firecloud import api as fapi
 import subprocess
 # import pprint
 
+def get_ws_bucket(project, name):
+    ''' get the google bucket path name for the given workspace
+    '''
 
+    res = fapi.get_workspace(project, name)
+    fapi._check_response_code(res, 200)
+    workspace = res.json()
+    bucket = workspace['workspace']['bucketName']
+
+    return bucket
 
 def clone_workspace(original_project, original_name, clone_project, verbose=False):
     ''' clone a given workspace
@@ -19,39 +28,35 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
     error_message = ''                                              # will be filled if there's an error
 
-    # Clone the Featured Workspace
+    # clone the Featured Workspace
     res = fapi.clone_workspace(original_project,
                             original_name,
                             clone_project,
                             clone_name,
                             )
 
-    # Catch if the Featured Workspace didn't clone
+    # catch if the workspace didn't clone
     if res.status_code != 201:
         error_message = 'Cloning failed'
         print(error_message)
         print(res.text)
         exit(1)
-    #Original Bucket    
-    r = fapi.get_workspace(original_project, original_name)
-    fapi._check_response_code(r, 200)
-    workspace = r.json()
-    original_bucket = workspace['workspace']['bucketName']
-
-    #Clone Bucket    
-    r = fapi.get_workspace(clone_project, clone_name)
-    fapi._check_response_code(r, 200)
-    workspace = r.json()
-    clone_bucket = workspace['workspace']['bucketName']
     
+    # get gs addresses of original & cloned workspace buckets
+    original_bucket = get_ws_bucket(original_project, original_name)
+    clone_bucket = get_ws_bucket(clone_project, clone_name)
+    
+    # TODO: check if this breaks if original_bucket is empty
     gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
-
     bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-    # Check output produces a string in Py2, Bytes in Py3, so decode if necessary
-    if type(bucket_files) == bytes:
-        bucket_files = bucket_files.decode().split('\n')
+    # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
+    # if type(bucket_files) == bytes:
+    #     bucket_files = bucket_files.decode().split('\n')
+    
     if verbose:
-        print('Notebooks copied')
+        print('Notebook files copied: ')
+        # print(bucket_files)
+        list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
     return clone_name
 
@@ -171,9 +176,9 @@ def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, 
         count = 0 
         time.sleep(sleep_time)
 
-def get_notebook(project, workspace, ipynb_only=True, verbose=False):
-    ''' get a list of notebooks (if ipynb_only = True) or everything in the 
-    notebooks folder (if ipynb_only = False) in the workspace
+def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
+    ''' get a list of everything in the notebooks folder (if ipynb_only = False) 
+    or of only jupyter notebook files (if ipynb_only = True) in the workspace
     '''
     res = fapi.get_workspace(project, workspace)
     fapi._check_response_code(res, 200)
@@ -194,11 +199,13 @@ def get_notebook(project, workspace, ipynb_only=True, verbose=False):
         if type(bucket_files) == bytes:
             bucket_files = bucket_files.decode().split('\n')
 
+        # select which files to list
         if ipynb_only:
             keyword = '.ipynb'       # returns only .ipynb files
         else:
             keyword = 'notebooks/'   # returns all files in notebooks/ folder
 
+        # pull out the notebook names from the full file paths
         for f in bucket_files:
             if keyword in f:
                 f = f.split('/')[-1]
@@ -222,10 +229,7 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
 
     workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = fapi.list_submissions(project, workspace)
-    if res.status_code != 200:
-        print(res.text)
-        exit(1)
-
+    fapi._check_response_code(res, 200)
     res = res.json()
 
     count = 0
@@ -319,7 +323,7 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
     workflows_list = list(workflow_dict.keys())
 
     # make a list of the notebooks
-    notebooks_list = get_notebook(project, workspace)
+    notebooks_list = list_notebooks(project, workspace, ipynb_only=True)
     if len(notebooks_list) == 0:
         notebooks_list = ['No notebooks in workspace']
     
