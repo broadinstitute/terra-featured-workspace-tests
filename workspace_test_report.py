@@ -18,7 +18,7 @@ def get_ws_bucket(project, name):
     return bucket
 
 def clone_workspace(original_project, original_name, clone_project, verbose=False):
-    ''' clone a given workspace
+    ''' clone a given workspace, including everything in the notebooks folder in the google bucket
     '''
     if verbose:
         print('cloning ' + original_name)
@@ -28,25 +28,18 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
     error_message = ''                                              # will be filled if there's an error
 
-    # clone the Featured Workspace
+    # clone the Featured Workspace & check for errors
     res = fapi.clone_workspace(original_project,
                             original_name,
                             clone_project,
-                            clone_name,
-                            )
-
-    # catch if the workspace didn't clone
-    if res.status_code != 201:
-        error_message = 'Cloning failed'
-        print(error_message)
-        print(res.text)
-        exit(1)
+                            clone_name)
+    fapi._check_response_code(res, 201)
     
     # get gs addresses of original & cloned workspace buckets
     original_bucket = get_ws_bucket(original_project, original_name)
     clone_bucket = get_ws_bucket(clone_project, clone_name)
     
-    # TODO: check if this breaks if original_bucket is empty
+    # TODO: check if this breaks if original_bucket is empty; also check if this is supposed to return something because it currently does not
     gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
     bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
     # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
@@ -75,11 +68,7 @@ def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, 
 
     # Get a list of workflows in the project
     res = fapi.list_workspace_configs(project, workspace, allRepos = True)
-
-    # Catch if the cloned feature workspace had an error with loading
-    if res.status_code != 200:
-        print(res.text)
-        exit(1)
+    fapi._check_response_code(res, 200)
 
     # run through the workflows and get information to create submissions for each workflow
     submissions = {}    # dict to store info about submissions
