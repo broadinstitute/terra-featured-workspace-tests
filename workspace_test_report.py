@@ -4,21 +4,24 @@ import time
 from wflow_class import wflow
 from firecloud import api as fapi
 import subprocess
+
+## for troubleshooting
 # import pprint
+# pp = pprint.PrettyPrinter(indent=4)
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace
     '''
-
+    # call the api, check for errors, pull out the bucket name
     res = fapi.get_workspace(project, name)
     fapi._check_response_code(res, 200)
     workspace = res.json()
     bucket = workspace['workspace']['bucketName']
-
     return bucket
 
+
 def clone_workspace(original_project, original_name, clone_project, verbose=False):
-    ''' clone a given workspace, including everything in the notebooks folder in the google bucket
+    ''' clone a workspace, including everything in the notebooks folder in the google bucket
     '''
     if verbose:
         print('cloning ' + original_name)
@@ -40,28 +43,26 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     clone_bucket = get_ws_bucket(clone_project, clone_name)
     
     # TODO: check if this breaks if original_bucket is empty; also check if this is supposed to return something because it currently does not
-    gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
-    bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-    # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
-    # if type(bucket_files) == bytes:
-    #     bucket_files = bucket_files.decode().split('\n')
-    
-    if verbose:
-        print('Notebook files copied: ')
-        # print(bucket_files)
-        list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
+    if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the bucket isn't empty
+        gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
+        bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+        # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
+        # if type(bucket_files) == bytes:
+        #     bucket_files = bucket_files.decode().split('\n')
+        
+        if verbose:
+            print('Notebook files copied: ')
+            # print(bucket_files)
+            list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
     return clone_name
 
-def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, verbose=False):
+def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
     ''' note: default sleep time (time to wait between checking whether 
     the submissions have finished) is 100 seconds
     '''
     if verbose:
         print('running workflow submissions on '+workspace)
-    
-    # # for troubleshooting
-    # pp = pprint.PrettyPrinter(indent=4)
     
     # terminal states
     terminal_states = set(['Done', 'Aborted'])
@@ -100,6 +101,17 @@ def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, 
 
     workflow_names = list(submissions.keys())
     workflow_names.sort()
+
+    # check whether workflows are ordered, if so, run in order
+    first_char = list(wf[0] for wf in workflow_names)
+    if ('1' in first_char) and ('2' in first_char):
+        do_order = True
+        if verbose:
+            print('Submitting workflows sequentially')
+    else:
+        do_order = False
+        if verbose:
+            print('Submitting workflows in parallel')
 
     for wf_name in workflow_names:
         wf = submissions[wf_name]
@@ -165,21 +177,22 @@ def run_workflow_submission(project, workspace, sleep_time=100, do_order=False, 
         count = 0 
         time.sleep(sleep_time)
 
+
 def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     ''' get a list of everything in the notebooks folder (if ipynb_only = False) 
     or of only jupyter notebook files (if ipynb_only = True) in the workspace
     '''
-    res = fapi.get_workspace(project, workspace)
-    fapi._check_response_code(res, 200)
-    workspace = res.json()
-    bucket = workspace['workspace']['bucketName']
+    # get the bucket for this workspace
+    bucket = get_ws_bucket(project, workspace)
 
     notebook_files = []
 
     # check if bucket is empty
     gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
     bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-    if len(bucket_files)>0: # if the bucket isn't empty
+    
+    # if the bucket isn't empty, check for notebook files and copy them
+    if len(bucket_files)>0: 
         # list files present in the bucket
         gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
         bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
@@ -207,6 +220,7 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
             print('\n'.join(notebook_files))
     
     return notebook_files
+
 
 def generate_workspace_report(project, workspace, html_output='/tmp/workspace_report.html', verbose=False):
     ''' generate a failure/success report for each workflow in a workspace, 

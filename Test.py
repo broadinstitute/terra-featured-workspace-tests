@@ -12,7 +12,6 @@ if __name__ == '__main__':
     parser.add_argument('--original_project', type=str, default='help-gatk', help='project for original workspace')
 
     parser.add_argument('--do_submission', action='store_true', help='run the workflow submission')
-    parser.add_argument('--do_order', action='store_true', help='run workflow submissions sequentially; default is to run them in parallel')
     parser.add_argument('--sleep_time', type=int, default=100, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='/tmp/workspace_report.html', help='address to create html doc for report')
 
@@ -21,7 +20,6 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
-    # print(args)
 
     
     clone_name = args.clone_name # this is None unless you entered one
@@ -36,7 +34,7 @@ if __name__ == '__main__':
             print(clone_name)
 
     if args.do_submission:
-        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.do_order, args.verbose)
+        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
 
     if args.test_notebook: # work in progress!
         # # # clone a workspace that has notebooks
@@ -46,7 +44,7 @@ if __name__ == '__main__':
         
         clone_name = 'Terra_Quickstart_Workspace_2019-09-03-15-19-28'
 
-        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.do_order, args.verbose)
+        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
         run_notebook_submission(args.clone_project, clone_name, args.verbose)
  
     if args.test_fail:
