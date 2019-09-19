@@ -24,7 +24,7 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     ''' clone a workspace, including everything in the notebooks folder in the google bucket
     '''
     if verbose:
-        print('cloning ' + original_name)
+        print('\nCloning ' + original_name)
 
     # define the name of the cloned workspace
     clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
@@ -57,12 +57,13 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
 
     return clone_name
 
+
 def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
     ''' note: default sleep time (time to wait between checking whether 
     the submissions have finished) is 100 seconds
     '''
     if verbose:
-        print('running workflow submissions on '+workspace)
+        print('\nRunning workflow submissions on '+workspace)
     
     # terminal states
     terminal_states = set(['Done', 'Aborted'])
@@ -107,11 +108,11 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
     if ('1' in first_char) and ('2' in first_char):
         do_order = True
         if verbose:
-            print('Submitting workflows sequentially')
+            print('[submitting workflows sequentially]')
     else:
         do_order = False
         if verbose:
-            print('Submitting workflows in parallel')
+            print('[submitting workflows in parallel]')
 
     for wf_name in workflow_names:
         wf = submissions[wf_name]
@@ -125,7 +126,7 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
                                     wf['entity_type'])
 
         if verbose:
-            print('submitted '+wf_name)
+            print(' submitted '+wf_name)
 
         if ret.status_code != 201: # check for errors
             print(ret.text)
@@ -151,8 +152,8 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
     # wait for the submission to finish (i.e. submission status is Done or Aborted)
     break_out = False       # flag for being done
     count = 0               # count how many submissions are done; to check if all are done
-    finish_workflows = []   # will be a list of finished workflows
-    finish_workflows_details = []
+    finished_workflows = []   # will be a list of finished workflows
+    finished_workflows_details = []
 
     while not break_out:
         # get the current list of submissions and their statuses
@@ -161,21 +162,25 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
         for item in res: # for each workflow
             if item['status'] in terminal_states: # if the workflow status is Done or Aborted
                 count += 1
-                if item['methodConfigurationName'] not in finish_workflows:
+                if item['methodConfigurationName'] not in finished_workflows:
                     details = str(item['methodConfigurationName']) + ' finished on '+ datetime.today().strftime('%m/%d/%Y at %H:%M')
-                    finish_workflows.append(item['methodConfigurationName'])
-                    finish_workflows_details.append(details)
+                    finished_workflows.append(item['methodConfigurationName'])
+                    finished_workflows_details.append(details)
             if count == len(res): # if all workflows are done, you're done!
                 break_out = True
                 sleep_time = 0
         
         if verbose:
             # print progress
-            print(datetime.today().strftime('%H:%M')+ ' - finished ' + str(count) + ' of ' + str(len(res)) + ' workflows:' + str(finish_workflows))
+            print(datetime.today().strftime('%H:%M') \
+                + ' - finished ' + str(count) + ' of ' + str(len(res)) + ' workflows: ' \
+                + ', '.join(finished_workflows))
         
         # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
         count = 0 
         time.sleep(sleep_time)
+    
+    return finished_workflows
 
 
 def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
@@ -222,13 +227,13 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def generate_workspace_report(project, workspace, html_output='/tmp/workspace_report.html', verbose=False):
+def generate_workspace_report(project, workspace, base_path, verbose=False):
     ''' generate a failure/success report for each workflow in a workspace, 
     only reporting on the most recent submission for each report.
     this returns a string html_output that's currently not modified by this function but might be in future!
     '''
     if verbose:
-        print('generating workspace report for '+workspace)
+        print('\nGenerating workspace report for '+workspace)
 
     workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
     res = fapi.list_submissions(project, workspace)
@@ -243,7 +248,7 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
         wf_name = item['methodConfigurationName']
         submission_id = item['submissionId']
         if verbose:
-            print('getting status and info for '+wf_name+' in submission '+submission_id)
+            print(' getting status and info for '+wf_name+' in submission '+submission_id)
 
         sub_dict = {} # this will collect wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
 
@@ -345,6 +350,7 @@ def generate_workspace_report(project, workspace, html_output='/tmp/workspace_re
     # generate detail text from notebooks
     notebooks_text = ''
 
+    html_output = base_path + workspace + '.html'
     # open, generate, and write the html text for the report
     f = open(html_output,'w')
     message = '''<html>
