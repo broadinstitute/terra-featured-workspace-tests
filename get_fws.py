@@ -7,18 +7,19 @@ import subprocess
 from firecloud import api as fapi
 from dataclasses import dataclass
 from workspace_test_report import list_notebooks
+from ws_class import Wspace
 
-@dataclass
-class featured_ws:
-    '''Class for keeping track of info for Featured Terra workflows.'''
-    project: str      
-    name: str
-    workflows: str = None
-    notebooks: str = None
-    has_wf: bool = False
-    has_nb: bool = False
-    status: str = None
-    report_path: str = None
+# @dataclass
+# class FeaturedWs:
+#     '''Class for keeping track of info for Featured Terra workflows.'''
+#     project: str      
+#     name: str
+#     workflows: str = None
+#     notebooks: str = None
+#     has_wf: bool = False
+#     has_nb: bool = False
+#     status: str = None
+#     report_path: str = None
 
 
 
@@ -36,7 +37,7 @@ def format_fws(verbose=True):
     # call api
     fws_json = get_fw_json()
 
-    fws = []
+    fws = {}
 
     for ws in fws_json:
         ws_project = ws['namespace']
@@ -81,11 +82,12 @@ def format_fws(verbose=True):
 
 
 
-        ### load into featured_ws class object
-        fw = featured_ws(ws_project, ws_name, 
-                         workflows = wfs, has_wf = has_wf,
-                         notebooks = nbs, has_nb = has_nb)
-        fws.append(fw)
+        ### load into Wspace class object
+        fw = Wspace(workspace = ws_name,
+                    project = ws_project, 
+                    workflows = wfs,
+                    notebooks = nbs)
+        fws[fw.key] = fw
 
     return fws
 
@@ -96,9 +98,9 @@ def get_fw_tsv(verbose):
     fws_file = '/tmp/fws.tsv'
     with open(fws_file, 'wt') as out_file:
         tsv_writer = csv.writer(out_file, delimiter='\t')
-        tsv_writer.writerow(['name', 'project', 'has_workflows', 'has_notebooks', 'workflows', 'notebooks'])
-        for fw in fws:
-            tsv_writer.writerow([fw.name, fw.project, fw.has_wf, fw.has_nb, fw.workflows, fw.notebooks])
+        tsv_writer.writerow(['name', 'project', 'workflows', 'notebooks'])
+        for fw in fws.values():
+            tsv_writer.writerow([fw.workspace, fw.project, fw.workflows, fw.notebooks])
             # if verbose:
             #     print(ws['namespace'] + '\t\t\t' + ws['name'])
 

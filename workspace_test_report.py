@@ -1,11 +1,12 @@
-from datetime import datetime
 import os
 import json
 import time
+import argparse
+import subprocess
+from datetime import datetime
 from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
-import subprocess
 
 ## for troubleshooting
 # import pprint
@@ -139,7 +140,7 @@ def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
             while not break_out:
                 sub_res = fapi.get_submission(project, workspace, submissionId)
                 fapi._check_response_code(sub_res, 200)
-                
+
                 sub_res = sub_res.json()
                 submission_status = sub_res['status']
                 if verbose:
@@ -158,8 +159,9 @@ def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
 
     while not break_out:
         # get the current list of submissions and their statuses
-        res = fapi.list_submissions(project, workspace).json()
+        res = fapi.list_submissions(project, workspace)
         fapi._check_response_code(res, 200)
+        res = res.json()
         
         for item in res: # for each workflow
             if item['status'] in terminal_states: # if the workflow status is Done or Aborted
@@ -460,17 +462,53 @@ def generate_master_report(master_ws_list, base_path, verbose=False):
 
     return report_path
 
-if __name__ == "__main__":
-    # test the report
 
-    master_ws_list = []
-    master_ws_list.append(Wspace(workspace = 'clone_name1',
-                                project = 'clone_project1',
-                                workflows = ['finished_workflows1'],
-                                status='FAILURE!'))
-    master_ws_list.append(Wspace(workspace = 'clone_name2',
-                                project = 'clone_project2',
-                                workflows = ['finished_workflows2'],
-                                status='SUCCESS!'))
-    report_path = generate_master_report(master_ws_list, '/tmp/', verbose=True)
+def test_single_ws(workspace, project, clone_project, base_path, sleep_time=60, verbose=True):
+    ''' clone, run submissions, and generate report for a single workspace
+    TODO: move this function into the Wspace class
+    '''
+
+    clone_name = clone_workspace(project, workspace, clone_project, verbose)
+    finished_workflows = run_workflow_submission(clone_project, clone_name, sleep_time, verbose)
+    if verbose:
+        print(finished_workflows)
+
+    # initialize this class variable with initial params
+    ws = Wspace(workspace = clone_name,
+                           project = clone_project,
+                           workflows = finished_workflows)
+
+    # run workspace report
+    report_path, status = generate_workspace_report(clone_project, clone_name, base_path, verbose)
+
+    # update class variable with report_path (TODO: add status)
+    ws.report_path = report_path
+    ws.status = status
+
+    return ws
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--clone_name', type=str, help='name of cloned workspace')
+    parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
+    parser.add_argument('--original_name', type=str, default='Sequence-Format-Conversion', help='name of workspace to clone')
+    parser.add_argument('--original_project', type=str, default='help-gatk', help='project for original workspace')
+
+    parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
+    parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
+    parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
+
+    parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
+
+    args = parser.parse_args()
+
+    # run the test on a single workspace
+    ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
+                                    args.base_path, args.sleep_time, args.verbose)
+    report_path = ws.report_path
+    
+    # open the report
     os.system('open ' + report_path)
+    
+    
