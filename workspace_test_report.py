@@ -1,7 +1,9 @@
 from datetime import datetime
+import os
 import json
 import time
 from wflow_class import Wflow
+from ws_class import Wspace
 from firecloud import api as fapi
 import subprocess
 
@@ -58,9 +60,8 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     return clone_name
 
 
-def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
-    ''' note: default sleep time (time to wait between checking whether 
-    the submissions have finished) is 100 seconds
+def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
+    ''' 
     '''
     if verbose:
         print('\nRunning workflow submissions on '+workspace)
@@ -124,13 +125,10 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
                                     wf['wf_name'], 
                                     wf['entity_name'], 
                                     wf['entity_type'])
-
+        fapi._check_response_code(ret, 201)
+        
         if verbose:
             print(' submitted '+wf_name)
-
-        if ret.status_code != 201: # check for errors
-            print(ret.text)
-            exit(1)
 
         # if the workflows must be run sequentially, wait for each to finish
         if do_order:
@@ -139,7 +137,10 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
             
             break_out = False
             while not break_out:
-                sub_res = fapi.get_submission(project, workspace, submissionId).json()
+                sub_res = fapi.get_submission(project, workspace, submissionId)
+                fapi._check_response_code(sub_res, 200)
+                
+                sub_res = sub_res.json()
                 submission_status = sub_res['status']
                 if verbose:
                     print(' ' +datetime.today().strftime('%H:%M')+ ' status: '+ submission_status)
@@ -158,6 +159,7 @@ def run_workflow_submission(project, workspace, sleep_time=100, verbose=False):
     while not break_out:
         # get the current list of submissions and their statuses
         res = fapi.list_submissions(project, workspace).json()
+        fapi._check_response_code(res, 200)
         
         for item in res: # for each workflow
             if item['status'] in terminal_states: # if the workflow status is Done or Aborted
@@ -387,5 +389,88 @@ def generate_workspace_report(project, workspace, base_path, verbose=False):
     f.write(message)
     f.close()
 
-    return html_output
+    return html_output, status_text
 
+
+
+def generate_master_report(master_ws_list, base_path, verbose=False):
+    ''' generate a report that lists all tested workspaces, the test result,
+    and links to each workspace report.
+    '''
+    if verbose:
+        print('\nGenerating master report')
+
+    workspaces_text = ''
+
+    failed = False
+
+    status_color_dict = {'FAILURE!':'red',
+                         'SUCCESS!':'green'}
+
+    for ws in master_ws_list:
+
+        # wf_name = wf
+        # workflows_text += '<h3>'+wf_name+'</h3>'
+        # workflows_text += '<blockquote>'
+        # sub_dict = workflow_dict[wf]
+        # for sub in sub_dict.values():
+        #     workflows_text += sub.get_HTML()
+        # workflows_text += '</blockquote>'
+        ws_name = ws.workspace
+        ws_status = ws.status
+        ws_report = ws.report_path
+        
+        
+        workspaces_text += '<h3>' + ws_name \
+                + ' : <font color=' + status_color_dict[ws_status] + '>' + ws_status + '</font></h3>'\
+                + '<blockquote>'
+        workspaces_text += '''<a href=''' + ws_report + ''' target='_blank'>Workspace report</a>'''
+        workspaces_text += '</blockquote><br><br>'
+
+        if ws.status == 'FAILED!':
+            failed = True
+
+    
+
+    report_path = base_path + 'master_report.html'
+    # open, generate, and write the html text for the report
+    f = open(report_path,'w')
+    message = '''<html>
+    <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+    </head>
+    <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+    <p>
+    <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
+    <h1>
+    <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+    <span style='vertical-align: middle;'>
+    Featured Workspace Report: Master list</span></h1></center></div>
+  
+    <br><br>
+    <h2>Workspaces:</h2>
+    ''' + workspaces_text + '''
+    <br>
+    </p>
+
+    </p></body>
+    </html>'''
+
+    f.write(message)
+    f.close()
+
+    return report_path
+
+if __name__ == "__main__":
+    # test the report
+
+    master_ws_list = []
+    master_ws_list.append(Wspace(workspace = 'clone_name1',
+                                project = 'clone_project1',
+                                workflows = ['finished_workflows1'],
+                                status='FAILURE!'))
+    master_ws_list.append(Wspace(workspace = 'clone_name2',
+                                project = 'clone_project2',
+                                workflows = ['finished_workflows2'],
+                                status='SUCCESS!'))
+    report_path = generate_master_report(master_ws_list, '/tmp/', verbose=True)
+    os.system('open ' + report_path)
