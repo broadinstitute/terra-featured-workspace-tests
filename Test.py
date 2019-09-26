@@ -50,7 +50,6 @@ if __name__ == '__main__':
 
 
     # testing, for now
-
     clone_name = args.clone_name # this is None unless you entered one
     if args.test_fail:
         clone_name = 'do not clone'

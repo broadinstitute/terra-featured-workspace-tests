@@ -4,6 +4,7 @@ import csv
 import os
 import pprint
 import subprocess
+import argparse
 from firecloud import api as fapi
 from dataclasses import dataclass
 from workspace_test_report import list_notebooks
@@ -32,7 +33,7 @@ def get_fw_json():
 
 
 def format_fws(get_info=False, verbose=True):
-    ''' format json file of featured workspaces into ws class
+    ''' format json file of featured workspaces into dictionary of workspace classes 
     '''
     # call api
     fws_json = get_fw_json()
@@ -88,6 +89,9 @@ def format_fws(get_info=False, verbose=True):
 
 
 def get_fw_tsv(get_info, verbose):
+    ''' convert dictionary into a tsv file
+    '''
+
     fws = format_fws(get_info, verbose)
 
     fws_file = '/tmp/fws.tsv'
@@ -107,9 +111,20 @@ def get_fw_tsv(get_info, verbose):
 
 if __name__ == '__main__':
 
-    open_file = True
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--get_info', action='store_true', help='pulls the names of notebooks and workflows')
+    parser.add_argument('--output_format', '-of', default='dict', help='formating the output file to tsv or dictionary')
+    parser.add_argument('--open_file','-o', action='store_true', help='open the tsv file listing all of the workspaces')
+    parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
+    parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
-    fws_file = get_fw_tsv(get_info=False, verbose=True)
+    args = parser.parse_args()
 
-    if open_file:
-        os.system('open ' + fws_file)
+    if args.output_format == "dict":
+        fws = format_fws(args.get_info, args.verbose)
+    elif args.output_format == "tsv":
+        fws_file = get_fw_tsv(args.get_info, args.verbose)
+        if args.open_file:
+            os.system('open ' + fws_file)
+    else:
+        print("output string not recognized, set --output_format to 'dict' or 'tsv'")
