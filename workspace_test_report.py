@@ -7,10 +7,13 @@ from datetime import datetime
 from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
+from tenacity import retry
 
 ## for troubleshooting
 # import pprint
 # pp = pprint.PrettyPrinter(indent=4)
+
+# TODO: add tenacity @retry for api calls
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace
@@ -73,10 +76,10 @@ def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
     # Get a list of workflows in the project
     res = fapi.list_workspace_configs(project, workspace, allRepos = True)
     fapi._check_response_code(res, 200)
+    res = res.json()    # convert to json
 
     # run through the workflows and get information to create submissions for each workflow
     submissions = {}    # dict to store info about submissions
-    res = res.json()    # convert to json
     for item in res:  # for each item (workflow)
         
         # identify the type of data (entity) being used by this workflow, if any
@@ -231,7 +234,7 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def generate_workspace_report(project, workspace, base_path, verbose=False):
+def generate_workspace_report(project, workspace, gcs_path, verbose=False):
     ''' generate a failure/success report for each workflow in a workspace, 
     only reporting on the most recent submission for each report.
     this returns a string html_output that's currently not modified by this function but might be in future!
@@ -354,9 +357,10 @@ def generate_workspace_report(project, workspace, base_path, verbose=False):
     # generate detail text from notebooks
     notebooks_text = ''
 
-    html_output = base_path + workspace + '.html'
+    html_output = workspace + '.html'
+    local_path = '/tmp/' + html_output
     # open, generate, and write the html text for the report
-    f = open(html_output,'w')
+    f = open(local_path,'w')
     message = '''<html>
     <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
     </head>
@@ -391,79 +395,102 @@ def generate_workspace_report(project, workspace, base_path, verbose=False):
     f.write(message)
     f.close()
 
-    return html_output, status_text
+    # upload report to google cloud bucket
+    report_path = upload_to_gcs(local_path, gcs_path)
+
+    return report_path, status_text
 
 
 
-def generate_master_report(master_ws_list, base_path, verbose=False):
-    ''' generate a report that lists all tested workspaces, the test result,
-    and links to each workspace report.
-    '''
-    if verbose:
-        print('\nGenerating master report')
+# def generate_master_report(master_ws_list, gcs_path, verbose=False):
+#     ''' generate a report that lists all tested workspaces, the test result,
+#     and links to each workspace report.
+#     '''
+#     if verbose:
+#         print('\nGenerating master report')
 
-    workspaces_text = ''
+#     workspaces_text = ''
 
-    failed = False
+#     failed = False
 
-    status_color_dict = {'FAILURE!':'red',
-                         'SUCCESS!':'green'}
+#     status_color_dict = {'FAILURE!':'red',
+#                          'SUCCESS!':'green'}
 
-    for ws in master_ws_list:
+#     for ws in master_ws_list:
 
-        # wf_name = wf
-        # workflows_text += '<h3>'+wf_name+'</h3>'
-        # workflows_text += '<blockquote>'
-        # sub_dict = workflow_dict[wf]
-        # for sub in sub_dict.values():
-        #     workflows_text += sub.get_HTML()
-        # workflows_text += '</blockquote>'
-        ws_name = ws.workspace
-        ws_status = ws.status
-        ws_report = ws.report_path
+#         # wf_name = wf
+#         # workflows_text += '<h3>'+wf_name+'</h3>'
+#         # workflows_text += '<blockquote>'
+#         # sub_dict = workflow_dict[wf]
+#         # for sub in sub_dict.values():
+#         #     workflows_text += sub.get_HTML()
+#         # workflows_text += '</blockquote>'
+#         ws_name = ws.workspace
+#         ws_status = ws.status
+#         ws_report = ws.report_path
         
         
-        workspaces_text += '<h3>' + ws_name \
-                + ' : <font color=' + status_color_dict[ws_status] + '>' + ws_status + '</font></h3>'\
-                + '<blockquote>'
-        workspaces_text += '''<a href=''' + ws_report + ''' target='_blank'>Workspace report</a>'''
-        workspaces_text += '</blockquote><br><br>'
+#         workspaces_text += '<h3>' + ws_name \
+#                 + ' : <font color=' + status_color_dict[ws_status] + '>' + ws_status + '</font></h3>'\
+#                 + '<blockquote>'
+#         workspaces_text += '''<a href=''' + ws_report + ''' target='_blank'>Workspace report</a>'''
+#         workspaces_text += '</blockquote><br><br>'
 
-        if ws.status == 'FAILED!':
-            failed = True
+#         if ws.status == 'FAILED!':
+#             failed = True
 
     
-
-    report_path = base_path + 'master_report.html'
-    # open, generate, and write the html text for the report
-    f = open(report_path,'w')
-    message = '''<html>
-    <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
-    </head>
-    <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
-    <p>
-    <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
-    <h1>
-    <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
-    <span style='vertical-align: middle;'>
-    Featured Workspace Report: Master list</span></h1></center></div>
+#     report_name = 'master_report.html'
+#     # report_path = base_path + report_name
+#     # open, generate, and write the html text for the report
+#     f = open(report_name,'w')
+#     message = '''<html>
+#     <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+#     </head>
+#     <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+#     <p>
+#     <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
+#     <h1>
+#     <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+#     <span style='vertical-align: middle;'>
+#     Featured Workspace Report: Master list</span></h1></center></div>
   
-    <br><br>
-    <h2>Workspaces:</h2>
-    ''' + workspaces_text + '''
-    <br>
-    </p>
+#     <br><br>
+#     <h2>Workspaces:</h2>
+#     ''' + workspaces_text + '''
+#     <br>
+#     </p>
 
-    </p></body>
-    </html>'''
+#     </p></body>
+#     </html>'''
 
-    f.write(message)
-    f.close()
+#     f.write(message)
+#     f.close()
+
+#     return report_path
+
+def upload_to_gcs(local_path, gcs_path):
+
+    bucket_name = "dsp-fieldeng/fw_reports/"
+    gs_bucket = "gs://" + bucket_name
+    
+    file_name = local_path.split('/')[-1]
+
+    # write file to google cloud 
+    system_command = "gsutil cp " + local_path + " " + gs_bucket
+    os.system(system_command)
+
+    # make file publicly accessible
+    system_command = "gsutil acl ch -u AllUsers:R " + gs_bucket + file_name
+    os.system(system_command)
+
+    # get report path (link to report on google cloud)
+    report_path = "https://storage.googleapis.com/" + bucket_name + file_name
+    print(report_path)
 
     return report_path
 
-
-def test_single_ws(workspace, project, clone_project, base_path, sleep_time=60, verbose=True):
+def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
     TODO: move this function into the Wspace class
     '''
@@ -479,7 +506,7 @@ def test_single_ws(workspace, project, clone_project, base_path, sleep_time=60, 
                            workflows = finished_workflows)
 
     # run workspace report
-    report_path, status = generate_workspace_report(clone_project, clone_name, base_path, verbose)
+    report_path, status = generate_workspace_report(clone_project, clone_name, gcs_path, verbose)
 
     # update class variable with report_path (TODO: add status)
     ws.report_path = report_path
@@ -497,7 +524,8 @@ if __name__ == "__main__":
 
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
-    parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
+    # parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
+    parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
 
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
@@ -505,8 +533,8 @@ if __name__ == "__main__":
 
     # run the test on a single workspace
     ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.base_path, args.sleep_time, args.verbose)
-    report_path = ws.report_path
+                                    args.gcs_path, args.sleep_time, args.verbose)
+    report_name = ws.report_path
     
     # open the report
     os.system('open ' + report_path)
