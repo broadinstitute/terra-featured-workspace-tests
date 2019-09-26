@@ -1,8 +1,8 @@
 import os
 import argparse
 from workspace_test_report import *
-from get_fws import format_fws
-from ws_class import Wspace
+from get_fws import *
+# from ws_class import Wspace
 
 
 
@@ -26,6 +26,83 @@ from ws_class import Wspace
 #     return report_path
 
 
+
+def generate_master_report(gcs_path, verbose=False):
+    ''' generate a report that lists all tested workspaces, the test result,
+    and links to each workspace report.
+    '''
+    if verbose:
+        print('\nGenerating master report from '+gcs_path)
+
+    workspaces_text = ''
+
+    # get list of reports in gcs bucket
+    system_command = "gsutil ls " + gcs_path
+    all_paths = os.popen(system_command).read()
+
+    # get the list of featured workspaces
+    fws_dict = format_fws(get_info=False, verbose=False)
+
+    fws_keys = fws_dict.keys()
+
+    finished_report_keys = []
+    # parse a list of the report names
+    for f in all_paths.split('\n'):
+        if '.html' in f:
+            # kludgy for now, but pull out workspace name and report path from the full bucket path
+            ws_name = f.replace(gcs_path,'')
+            ws_orig = ''.join(ws_name.split('_')[:-1]) # the original featured workspace name
+
+            if len(ws_orig)>0: # in case of empty string
+                for key in fws_keys:
+                    if ws_orig in key:
+                        finished_report_keys.append(key)
+                        # populate the Wspace class with report_path
+                        fws_dict[key].report_path = f.replace('gs://','https://storage.googleapis.com/')
+
+
+    # generate text for report
+
+    workspaces_text = ''
+
+    for key in finished_report_keys:
+        workspaces_text += '''<a href=''' + fws_dict[key].report_path + ''' target='_blank'>''' + fws_dict[key].workspace + '''</a>'''
+        workspaces_text += '<br><br>'
+
+    
+    report_name = 'master_report.html'
+    local_path = '/tmp/' + report_name
+    # open, generate, and write the html text for the report
+    f = open(local_path,'w')
+    message = '''<html>
+    <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+    </head>
+    <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+    <p>
+    <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
+    <h1>
+    <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+    <span style='vertical-align: middle;'>
+    Featured Workspace Report: Master list</span></h1></center></div>
+  
+    <br><br>
+    <h2>Workspaces:</h2>
+    ''' + workspaces_text + '''
+    <br>
+    </p>
+
+    </p></body>
+    </html>'''
+
+    f.write(message)
+    f.close()
+
+    # upload report to google cloud bucket
+    report_path = upload_to_gcs(local_path, gcs_path, verbose)
+
+    return report_path
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--clone_name', type=str, help='name of cloned workspace')
@@ -35,7 +112,6 @@ if __name__ == '__main__':
 
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
-    # parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
 
 
@@ -43,18 +119,19 @@ if __name__ == '__main__':
     parser.add_argument('--do_submission', action='store_true', help='run the workflow submission')
     parser.add_argument('--test_notebook', action='store_true', help='test notebooks')
     parser.add_argument('--test_fail', action='store_true', help='run a report on a failed submission')
+    parser.add_argument('--test_master', action='store_true', help='run a master report on everything in the google bucket')
     
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
 
 
-    # testing, for now
-    clone_name = args.clone_name # this is None unless you entered one
-    if args.test_fail:
-        clone_name = 'do not clone'
-    if args.test_notebook:
-        clone_name = 'do not clone'
+    # # testing, for now
+    # clone_name = args.clone_name # this is None unless you entered one
+    # if args.test_fail:
+    #     clone_name = 'do not clone'
+    # if args.test_notebook:
+    #     clone_name = 'do not clone'
 
     if args.do_submission:
         run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
@@ -78,13 +155,17 @@ if __name__ == '__main__':
         # # this submission has failures and successes
         # project = 'featured-workspace-testing'
         # workspace = 'Germline-SNPs-Indels-GATK4-hg38_2019-08-20-14-11-56'
-    else:
-        project = args.clone_project
-        workspace = clone_name
+    # else:
+    #     project = args.clone_project
+    #     workspace = clone_name
 
-    # run the report and open it
-    html_output, status = generate_workspace_report(project, workspace, args.gcs_path, args.verbose)
-    os.system('open ' + html_output)
+    if args.test_master:
+        report_path = generate_master_report(args.gcs_path, args.verbose)
+        os.system('open ' + report_path)
+    else:
+        # run the report and open it
+        html_output, status = generate_workspace_report(project, workspace, args.gcs_path, args.verbose)
+        os.system('open ' + html_output)
 
 
 

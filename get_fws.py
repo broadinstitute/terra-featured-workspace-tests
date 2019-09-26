@@ -10,20 +10,6 @@ from dataclasses import dataclass
 from workspace_test_report import list_notebooks
 from ws_class import Wspace
 
-# @dataclass
-# class FeaturedWs:
-#     '''Class for keeping track of info for Featured Terra workflows.'''
-#     project: str      
-#     name: str
-#     workflows: str = None
-#     notebooks: str = None
-#     has_wf: bool = False
-#     has_nb: bool = False
-#     status: str = None
-#     report_path: str = None
-
-
-
 
 def get_fw_json():
     request_url = 'https://storage.googleapis.com/firecloud-alerts/featured-workspaces.json'
@@ -70,7 +56,7 @@ def format_fws(get_info=False, verbose=True):
                 wfs = None
 
             ### Extract notebooks
-            nbs = list_notebooks(ws_project, ws_name)
+            nbs = list_notebooks(ws_project, ws_name, ipynb_only=True)
             
             if len(nbs) > 0:
                 if verbose:
@@ -120,9 +106,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.output_format == "dict":
+    if args.output_format == 'dict':
         fws = format_fws(args.get_info, args.verbose)
-    elif args.output_format == "tsv":
+    elif args.output_format == 'tsv':
         fws_file = get_fw_tsv(args.get_info, args.verbose)
         if args.open_file:
             os.system('open ' + fws_file)
