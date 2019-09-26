@@ -35,7 +35,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
-    parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
+    # parser.add_argument('--base_path', type=str, default='/tmp/', help='path or folder where reports will be generated')
+    parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
+
 
     # these things are quasi-unit tests:
     parser.add_argument('--do_submission', action='store_true', help='run the workflow submission')
@@ -82,7 +84,7 @@ if __name__ == '__main__':
         workspace = clone_name
 
     # run the report and open it
-    html_output, status = generate_workspace_report(project, workspace, args.base_path, args.verbose)
+    html_output, status = generate_workspace_report(project, workspace, args.gcs_path, args.verbose)
     os.system('open ' + html_output)
 
 

@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
     open_file = True
 
-    fws_file = get_fw_tsv(get_info = False, verbose = True)
+    fws_file = get_fw_tsv(get_info=False, verbose=True)
 
     if open_file:
         os.system('open ' + fws_file)
