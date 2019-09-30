@@ -7,7 +7,7 @@ from datetime import datetime
 from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
-from tenacity import retry
+# from tenacity import retry
 
 ## for troubleshooting
 # import pprint
