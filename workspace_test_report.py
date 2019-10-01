@@ -160,7 +160,6 @@ def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
         break_out = False       # flag for being done
         count = 0               # count how many submissions are done; to check if all are done
         finished_workflows = []   # will be a list of finished workflows
-        finished_workflows_details = []
 
         while not break_out:
             # get the current list of submissions and their statuses
@@ -174,10 +173,10 @@ def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
                     if item['methodConfigurationName'] not in finished_workflows:
                         details = str(item['methodConfigurationName']) + ' finished on '+ datetime.today().strftime('%m/%d/%Y at %H:%M')
                         finished_workflows.append(item['methodConfigurationName'])
-                        finished_workflows_details.append(details)
-                if count == len(res): # if all workflows are done, you're done!
-                    break_out = True
-                    sleep_time = 0
+            
+            if count == len(res): # if all workflows are done, you're done!
+                break_out = True
+                sleep_time = 0
             
             if verbose:
                 # print progress
