@@ -7,6 +7,8 @@ from datetime import datetime
 from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
+from submission_class import Submission
+
 # from tenacity import retry
 
 ## for troubleshooting
@@ -61,137 +63,144 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
             # print(bucket_files)
             list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
-    return clone_name
+    clone_ws = Wspace(  workspace = clone_name,
+                        project = clone_project,
+                        notebooks = list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
+                            
+
+    return clone_ws
 
 
-def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
-    ''' 
-    '''
-    if verbose:
-        print('\nRunning workflow submissions on '+workspace)
+# def run_workflow_submission(project, workspace, sleep_time=60, verbose=False):
+#     ''' 
+#     '''
+#     if verbose:
+#         print('\nRunning workflow submissions on '+workspace)
     
-    # terminal states
-    terminal_states = set(['Done', 'Aborted'])
+#     # terminal states
+#     terminal_states = set(['Done', 'Aborted'])
 
-    # Get a list of workflows in the project
-    res = fapi.list_workspace_configs(project, workspace, allRepos = True)
-    fapi._check_response_code(res, 200)
-    res = res.json()    # convert to json
+#     # Get a list of workflows in the project
+#     res = fapi.list_workspace_configs(project, workspace, allRepos = True)
+#     fapi._check_response_code(res, 200)
+#     res = res.json()    # convert to json
 
-    if len(res) > 0: # only proceed if there are workflows
-        # run through the workflows and get information to create submissions for each workflow
-        submissions = {}    # dict to store info about submissions
+#     if len(res) > 0: # only proceed if there are workflows
+#         # run through the workflows and get information to create submissions for each workflow
+#         submissions = {}    # dict to store info about submissions
 
-        for item in res:  # for each item (workflow)
+#         for item in res:  # for each item (workflow)
             
-            # identify the type of data (entity) being used by this workflow, if any
-            if 'rootEntityType' in item:
-                entityType = item['rootEntityType']
-            else:
-                entityType = None
-            project_orig = item['namespace']    # original billing project
-            wf_name = item['name']              # the name of the workflow
+#             # identify the type of data (entity) being used by this workflow, if any
+#             if 'rootEntityType' in item:
+#                 entityType = item['rootEntityType']
+#             else:
+#                 entityType = None
+#             project_orig = item['namespace']    # original billing project
+#             wf_name = item['name']              # the name of the workflow
 
-            # get and store the name of the data (entity) being used, if any
-            entities = fapi.get_entities(project, workspace, entityType)
-            entityName = None
-            if len(entities.json()) != 0:
-                entityName = entities.json()[0]['name']
+#             # get and store the name of the data (entity) being used, if any
+#             entities = fapi.get_entities(project, workspace, entityType)
+#             entityName = None
+#             if len(entities.json()) != 0:
+#                 entityName = entities.json()[0]['name']
 
-            # create dictionary of inputs for fapi.create_submission - TODO: this could be a class?
-            submission_input = {'project':project,
-                                'workspace':workspace,
-                                'project_orig':project_orig,
-                                'wf_name':wf_name,
-                                'entity_name':entityName,
-                                'entity_type':entityType}
-            submissions[wf_name] = submission_input
+#             # create dictionary of inputs for fapi.create_submission - TODO: this could be a class?
+#             submission_input = Submission(workspace = workspace,
+#                                 ws_project = project,     
+#                                 wf_project = project_orig,  
+#                                 wf_name = wf_name,      
+#                                 entity_name = entityName,
+#                                 entity_type = entityType)
+#             submissions[wf_name] = submission_input
 
-        workflow_names = list(submissions.keys())
-        workflow_names.sort()
+#         workflow_names = list(submissions.keys())
+#         workflow_names.sort()
 
-        # check whether workflows are ordered, if so, run in order
-        first_char = list(wf[0] for wf in workflow_names)
-        if ('1' in first_char) and ('2' in first_char):
-            do_order = True
-            if verbose:
-                print('[submitting workflows sequentially]')
-        else:
-            do_order = False
-            if verbose:
-                print('[submitting workflows in parallel]')
+#         # check whether workflows are ordered, if so, run in order
+#         first_char = list(wf[0] for wf in workflow_names)
+#         if ('1' in first_char) and ('2' in first_char):
+#             do_order = True
+#             if verbose:
+#                 print('[submitting workflows sequentially]')
+#         else:
+#             do_order = False
+#             if verbose:
+#                 print('[submitting workflows in parallel]')
 
-        for wf_name in workflow_names:
-            wf = submissions[wf_name]
+#         for wf_name in workflow_names:
+#             wf = submissions[wf_name]
 
-            # create a submission to run for this workflow
-            ret = fapi.create_submission(wf['project'], 
-                                        wf['workspace'], 
-                                        wf['project_orig'], 
-                                        wf['wf_name'], 
-                                        wf['entity_name'], 
-                                        wf['entity_type'])
-            fapi._check_response_code(ret, 201)
+#             # create a submission to run for this workflow
+#             ret = fapi.create_submission(wf.ws_project, 
+#                                         wf.workspace, 
+#                                         wf.wf_project, 
+#                                         wf.wf_name, 
+#                                         wf.entity_name, 
+#                                         wf.entity_type)
+#             fapi._check_response_code(ret, 201)
             
-            if verbose:
-                print(' submitted '+wf_name)
+#             if verbose:
+#                 print(' submitted '+wf_name)
 
-            # if the workflows must be run sequentially, wait for each to finish
-            if do_order:
-                ret = ret.json()
-                submissionId = ret['submissionId']
+#             # if the workflows must be run sequentially, wait for each to finish
+#             if do_order:
+#                 ret = ret.json()
+#                 submissionId = ret['submissionId']
+#                 wf.sub_id = submissionId
                 
-                break_out = False
-                while not break_out:
-                    sub_res = fapi.get_submission(project, workspace, submissionId)
-                    fapi._check_response_code(sub_res, 200)
+#                 break_out = False
+#                 while not break_out:
+#                     sub_res = fapi.get_submission(project, workspace, submissionId)
+#                     fapi._check_response_code(sub_res, 200)
 
-                    sub_res = sub_res.json()
-                    submission_status = sub_res['status']
-                    if verbose:
-                        print(' ' +datetime.today().strftime('%H:%M')+ ' status: '+ submission_status)
-                    if submission_status in terminal_states:
-                        break_out = True
-                    else:
-                        time.sleep(sleep_time)
+#                     sub_res = sub_res.json()
+#                     submission_status = sub_res['status']
+#                     wf.status = submission_status
+#                     if verbose:
+#                         print(' ' +datetime.today().strftime('%H:%M')+ ' status: '+ submission_status)
+#                     if submission_status in terminal_states:
+#                         break_out = True
+#                     else:
+#                         time.sleep(sleep_time)
 
 
-        # wait for the submission to finish (i.e. submission status is Done or Aborted)
-        break_out = False       # flag for being done
-        count = 0               # count how many submissions are done; to check if all are done
-        finished_workflows = []   # will be a list of finished workflows
+#         # wait for the submission to finish (i.e. submission status is Done or Aborted)
+#         break_out = False       # flag for being done
+#         count = 0               # count how many submissions are done; to check if all are done
+#         finished_workflows = []   # will be a list of finished workflows
 
-        while not break_out:
-            # get the current list of submissions and their statuses
-            res = fapi.list_submissions(project, workspace)
-            fapi._check_response_code(res, 200)
-            res = res.json()
+#         while not break_out:
+#             # get the current list of submissions and their statuses
+#             res = fapi.list_submissions(project, workspace)
+#             fapi._check_response_code(res, 200)
+#             res = res.json()
             
-            for item in res: # for each workflow
-                if item['status'] in terminal_states: # if the workflow status is Done or Aborted
-                    count += 1
-                    if item['methodConfigurationName'] not in finished_workflows:
-                        details = str(item['methodConfigurationName']) + ' finished on '+ datetime.today().strftime('%m/%d/%Y at %H:%M')
-                        finished_workflows.append(item['methodConfigurationName'])
+#             for item in res: # for each workflow
+#                 if item['status'] in terminal_states: # if the workflow status is Done or Aborted
+#                     count += 1
+#                     if item['methodConfigurationName'] not in finished_workflows:
+#                         details = str(item['methodConfigurationName']) + ' finished on '+ datetime.today().strftime('%m/%d/%Y at %H:%M')
+#                         finished_workflows.append(item['methodConfigurationName'])
             
-            if count == len(res): # if all workflows are done, you're done!
-                break_out = True
-                sleep_time = 0
+#             if count == len(res): # if all workflows are done, you're done!
+#                 break_out = True
+#                 sleep_time = 0
             
-            if verbose:
-                # print progress
-                print(datetime.today().strftime('%H:%M') \
-                    + ' - finished ' + str(count) + ' of ' + str(len(res)) + ' workflows: ' \
-                    + ', '.join(finished_workflows))
+#             if verbose:
+#                 # print progress
+#                 print(datetime.today().strftime('%H:%M') \
+#                     + ' - finished ' + str(count) + ' of ' + str(len(res)) + ' workflows: ' \
+#                     + ', '.join(finished_workflows))
             
-            # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
-            count = 0 
-            time.sleep(sleep_time)
+#             # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
+#             count = 0 
+#             time.sleep(sleep_time)
 
-    else: # if there are no workflows
-        finished_workflows = None
+#     else: # if there are no workflows
+#         finished_workflows = None
     
-    return finished_workflows
+#     return finished_workflows
 
 
 def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
@@ -431,18 +440,19 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
     TODO: move this function into the Wspace class
     '''
 
-    clone_name = clone_workspace(project, workspace, clone_project, verbose)
-    finished_workflows = run_workflow_submission(clone_project, clone_name, sleep_time, verbose)
+    clone_ws = clone_workspace(project, workspace, clone_project, verbose)
+
+    finished_workflows = clone_ws.run_workflow_submission(sleep_time, verbose)
     if verbose:
         print(finished_workflows)
 
     # initialize this class variable with initial params
-    ws = Wspace(workspace = clone_name,
+    ws = Wspace(workspace = clone_ws.workspace,
                            project = clone_project,
                            workflows = finished_workflows)
 
     # run workspace report
-    report_path, status = generate_workspace_report(clone_project, clone_name, gcs_path, verbose)
+    report_path, status = generate_workspace_report(clone_project, clone_ws.workspace, gcs_path, verbose)
 
     # update class variable with report_path (TODO: add status)
     ws.report_path = report_path
