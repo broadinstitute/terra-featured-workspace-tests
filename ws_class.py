@@ -72,7 +72,7 @@ class Wspace:
 
                 # create dictionary of inputs for fapi.create_submission - TODO: this could be a class?
                 submission_input = Submission(workspace = workspace,
-                                    ws_project = project,     
+                                    project = project,     
                                     wf_project = project_orig,  
                                     wf_name = wf_name,      
                                     entity_name = entityName,
@@ -95,36 +95,37 @@ class Wspace:
 
             for wf_name in workflow_names:
                 wf = submissions[wf_name]
-
+                wf.create_submission(verbose=True)
                 # create a submission to run for this workflow
-                ret = fapi.create_submission(wf.ws_project, 
-                                            wf.workspace, 
-                                            wf.wf_project, 
-                                            wf.wf_name, 
-                                            wf.entity_name, 
-                                            wf.entity_type)
-                fapi._check_response_code(ret, 201)
+                # ret = fapi.create_submission(wf.ws_project, 
+                #                             wf.workspace, 
+                #                             wf.wf_project, 
+                #                             wf.wf_name, 
+                #                             wf.entity_name, 
+                #                             wf.entity_type)
+                # fapi._check_response_code(ret, 201)
                 
-                if verbose:
-                    print(' submitted '+wf_name)
+               
 
                 # if the workflows must be run sequentially, wait for each to finish
                 if do_order:
-                    ret = ret.json()
-                    submissionId = ret['submissionId']
-                    wf.sub_id = submissionId
+                    # ret = ret.json()
+                    # submissionId = ret['submissionId']
+                    # wf.sub_id = submissionId
                     
                     break_out = False
                     while not break_out:
-                        sub_res = fapi.get_submission(project, workspace, submissionId)
-                        fapi._check_response_code(sub_res, 200)
+                        # sub_res = fapi.get_submission(project, workspace, submissionId)
+                        # fapi._check_response_code(sub_res, 200)
 
-                        sub_res = sub_res.json()
-                        submission_status = sub_res['status']
-                        wf.status = submission_status
-                        if verbose:
-                            print(' ' +datetime.today().strftime('%H:%M')+ ' status: '+ submission_status)
-                        if submission_status in terminal_states:
+                        # sub_res = sub_res.json()
+                        # submission_status = sub_res['status']
+                        # wf.status = submission_status
+                        # if verbose:
+                        #     print(' ' +datetime.today().strftime('%H:%M')+ ' status: '+ submission_status)
+
+                        wf.check_status(verbose=True)
+                        if wf.status in terminal_states:
                             break_out = True
                         else:
                             time.sleep(sleep_time)
