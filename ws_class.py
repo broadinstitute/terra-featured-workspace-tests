@@ -8,6 +8,7 @@ from wflow_class import Wflow
 from dataclasses import dataclass, field
 from firecloud import api as fapi
 from submission_class import Submission
+from gcs_fns import upload_to_gcs
 
 
 @dataclass
@@ -22,6 +23,7 @@ class Wspace:
     workflows: list = field(default_factory=lambda: []) # this initializes with an empty list
     notebooks: list = field(default_factory=lambda: [])
     active_submissions: list = field(default_factory=lambda: [])
+    tested_workflows: list = field(default_factory=lambda: [])
     report_path: str = None
 
     def __post_init__(self):
@@ -48,7 +50,7 @@ class Wspace:
         fapi._check_response_code(res, 200)
         res = res.json()    # convert to json
 
-        ''' # this is a WIP - to set up submission classes and structure them as lists
+        # this is a WIP - to set up submission classes and structure them as lists
         if len(res) > 0: # only proceed if there are workflows
             # get list of workflows to submit
             workflow_names = []
@@ -80,20 +82,65 @@ class Wspace:
                                                             entity_type = entityType)
 
 
-            # check whether workflows are ordered, if so, run in order
+            # check whether workflows are ordered, and structure list of submissions accordingly
             first_char = list(wf[0] for wf in workflow_names)
+            submissions_list = []
             if ('1' in first_char) and ('2' in first_char):
                 do_order = True
+                for wf_name in workflow_names:
+                    submissions_list.append([submissions_unordered[wf_name]])
+                
                 if verbose:
                     print('[submitting workflows sequentially]')
             else:
                 do_order = False
+                sub_list = []
+                for wf_name in workflow_names:
+                    sub_list.append(submissions_unordered[wf_name])
+                submissions_list = [sub_list]
                 if verbose:
                     print('[submitting workflows in parallel]')
-'''
+            
+            self.active_submissions = submissions_list
 
-
-
+        # SUBMIT the submissions - this should be a new function eventually
+        break_out = False
+        while not break_out:
+            if len(self.active_submissions) > 0:
+                count = 0
+                # the way active_submissions is structured, if workflows need to be run in order, they will be 
+                # separate lists within active_submissions; if they can be run in parallel, there will be 
+                # one list inside active_submissions containing all the workflow submissions to run.
+                sublist = self.active_submissions[0]
+                for sub in sublist: 
+                    # if the submission hasn't yet been submitted, do it
+                    if sub.status is None:
+                        sub.create_submission(verbose=True)
+                    
+                    # if the submission hasn't finished, check its status
+                    if sub.status not in terminal_states: # to avoid overchecking
+                        sub.check_status(verbose) # check and update the status of the submission
+                    
+                    # if the submission has finished, count it
+                    if sub.status in terminal_states:
+                        count += 1
+                        if sub.wf_name not in self.tested_workflows:
+                            self.tested_workflows.append(sub.wf_name)
+                
+                if verbose:
+                    # print progress
+                    print(datetime.today().strftime('%H:%M') \
+                        + ' - finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflow submissions: ' \
+                        + ', '.join(self.tested_workflows))
+                
+                # if all submissions are done, remove this set of submissions from the master submissions_list
+                if count == len(sublist):
+                    self.active_submissions.pop(0)
+                else:
+                    time.sleep(sleep_time)
+            else:
+                break_out = True
+            '''
         if len(res) > 0: # only proceed if there are workflows
             # run through the workflows and get information to create submissions for each workflow
             submissions = {}    # dict to store info about submissions
@@ -153,7 +200,6 @@ class Wspace:
                         else:
                             time.sleep(sleep_time)
 
-
             # wait for the submission to finish (i.e. submission status is Done or Aborted)
             break_out = False       # flag for being done
             count = 0               # count how many submissions are done; to check if all are done
@@ -161,7 +207,9 @@ class Wspace:
 
             while not break_out:
                 for sub in submissions.values():
-                    sub.check_status(verbose) # check the status
+                    if sub.status not in terminal_states: # to avoid overchecking
+                        sub.check_status(verbose) # check the status
+                    
                     if sub.status in terminal_states:
                         count += 1
                         if sub.wf_name not in finished_workflows:
@@ -179,12 +227,175 @@ class Wspace:
                 # if not all workflows are done yet, reset the count and wait sleep_time seconds to check again
                 count = 0 
                 time.sleep(sleep_time)
+                '''
+    
+    def generate_workspace_report(self, gcs_path, verbose=False):
+        ''' generate a failure/success report for each workflow in a workspace, 
+        only reporting on the most recent submission for each report.
+        this returns a string html_output that's currently not modified by this function but might be in future!
+        '''
+        if verbose:
+            print('\nGenerating workspace report for '+self.workspace)
 
-        else: # if there are no workflows
-            finished_workflows = None
+        workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
+        res = fapi.list_submissions(self.project, self.workspace)
+        fapi._check_response_code(res, 200)
+        res = res.json()
+
+        count = 0
+        Failed = False
+
+        for item in res:
+            # each item in res corresponds with a submission for one workflow that may contain multiple entities
+            wf_name = item['methodConfigurationName']
+            submission_id = item['submissionId']
+            if verbose:
+                print(' getting status and info for '+wf_name+' in submission '+submission_id)
+
+            sub_dict = {} # this will collect Wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
+
+            FailedMess = []
+
+            for i in fapi.get_submission(self.project, self.workspace, submission_id).json()['workflows']:
+                # each i in here corresponds with a single workflow with a given entity
+                
+                # if this workflow has an entity, store its name
+                if 'workflowEntity' in i:
+                    entity_name = i['workflowEntity']['entityName']
+                else:
+                    entity_name = None
+
+                # if the workflow has a workflowId, meaning the submission completed, then get and store it
+                if 'workflowId' in i:
+                    wfid = i['workflowId']
+                    key = wfid                  # use the workflowId as the key for the dictionary
+
+                    # get more details from the workflow: status, error message
+                    resworkspace = fapi.get_workflow_metadata(self.project, self.workspace, submission_id, wfid).json()
+                    mess_details = None
+                    wf_status = resworkspace['status']
+
+                    # in case of failure, pull out the error message
+                    if wf_status == 'Failed':
+                        for failed in resworkspace['failures']:
+                            for message in failed['causedBy']:
+                                mess_details = str(message['message'])
+                                Failed = True
+                    elif wf_status == 'Aborted':
+                        mess_details = 'Aborted'
+                        Failed = True
+                    
+                else: # if no workflowId
+                    count +=1                       # count of workflows with no workflowId
+                    wfid = None                     # store the wfid as None, since there is none
+                    key = 'no_wfid_'+str(count)     # create a key to use in the dict
+
+                    if i['status'] == 'Failed':
+                        wf_status = 'Failed'
+                        # get the error message for why it failed
+                        mess_details = str(i['messages'])[1:-1]
+                        Failed = True
+                    elif i['status'] == 'Aborted':
+                        wf_status = 'Aborted'
+                        mess_details = 'Aborted'
+                        Failed = True
+                    else: # should probably never get here, but just in case
+                        wf_status = i['status']
+                        mess_dtails = 'unrecognized status'
+                        Failed = True
+                
+                # store all this information in the dictionary containing workflow classes
+                sub_dict[key]=Wflow(workspace=self.workspace,
+                                    project=self.project,
+                                    wfid=wfid, 
+                                    subid=submission_id,
+                                    wfname=wf_name, 
+                                    entity=entity_name, 
+                                    status=wf_status, 
+                                    message=mess_details)
+
+            workflow_dict[wf_name] = sub_dict
+
+
+
+        ### the rest of this function sets up the html report
+        # probably TODO: make the report its own function
+        workspace_link = 'https://app.terra.bio/#workspaces/' + self.project + '/' + self.workspace + '/job_history'
+
+        # if there were ANY failures
+        if Failed:
+            status_text = 'FAILURE!'
+            status_color = 'red'
+        else:
+            status_text = 'SUCCESS!'
+            status_color = 'green'
+
+        # make a list of the workflows
+        workflows_list = self.workflows #list(workflow_dict.keys())
+
+        # make a list of the notebooks
+        notebooks_list = self.notebooks #list_notebooks(project, workspace, ipynb_only=True)
+        # if len(notebooks_list) == 0:
+        #     notebooks_list = ['No notebooks in workspace']
         
-        return finished_workflows
+        # generate detail text from workflows
+        workflows_text = ''
+        for wf in workflow_dict.keys():
+            wf_name = wf
+            workflows_text += '<h3>'+wf_name+'</h3>'
+            workflows_text += '<blockquote>'
+            sub_dict = workflow_dict[wf]
+            for sub in sub_dict.values():
+                workflows_text += sub.get_HTML()
+            workflows_text += '</blockquote>'
+        
+        # generate detail text from notebooks
+        notebooks_text = ''
 
+        html_output = self.workspace + '.html'
+        local_path = '/tmp/' + html_output
+        # open, generate, and write the html text for the report
+        f = open(local_path,'w')
+        message = '''<html>
+        <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+        </head>
+        <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+        <p>
+        <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
+        <h1>
+        <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+        <span style='vertical-align: middle;'>
+        Featured Workspace Report</span></h1>
+
+        <h1><font color={status_color}>{status_text}</font></h1></center> <br><br>
+        
+        <br><br><h2><b> Featured Workspace: </b>
+        <a href='''+workspace_link+''' target='_blank'>''' + self.workspace + ''' </a></h2>
+        <big><b> Billing Project: </b>''' + self.project + ''' </big>
+        <br><br><big><b> Workflows: </b>''' + ', '.join(workflows_list) + ''' </big>
+        <br><big><b> Notebooks: </b>''' + ', '.join(notebooks_list) + ''' </big>
+        <br>
+        <h2>Workflows:</h2>
+        <blockquote> ''' + workflows_text + ''' </blockquote>
+        <br>
+        <h2>Notebooks:</h2>
+        <blockquote> ''' + notebooks_text + ''' </blockquote>
+        </p>
+
+        </p></body>
+        </html>'''
+
+        message = message.format(status_color = status_color,
+                                status_text = status_text)
+        f.write(message)
+        f.close()
+
+        # upload report to google cloud bucket
+        report_path = upload_to_gcs(local_path, gcs_path, verbose)
+
+        self.report_path = report_path
+        self.status = status_text
+        # return report_path, status_text
 
 if __name__ == "__main__":
     # test this out
