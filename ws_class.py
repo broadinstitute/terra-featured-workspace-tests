@@ -32,18 +32,11 @@ class Wspace:
         self.key = self.project + '/' + self.workspace
         #self.notebooks = list_notebooks(self.project, self.workspace, ipynb_only=True, verbose=False)
 
-    # def submit_workflows(self):
-
-    # def check_status(self):
-
-    def run_workflow_submission(self, sleep_time=60, verbose=False):
+    def create_submissions(self, verbose=False):
         project = self.project
         workspace = self.workspace
         if verbose:
             print('\nRunning workflow submissions on '+workspace)
-        
-        # terminal states
-        terminal_states = set(['Done', 'Aborted'])
     
         # Get a list of workflows in the project
         res = fapi.list_workspace_configs(project, workspace, allRepos = True)
@@ -103,43 +96,43 @@ class Wspace:
             
             self.active_submissions = submissions_list
 
+
+    def check_submissions(self, verbose=False):
         # SUBMIT the submissions - this should be a new function eventually
-        break_out = False
-        while not break_out:
-            if len(self.active_submissions) > 0:
-                count = 0
-                # the way active_submissions is structured, if workflows need to be run in order, they will be 
-                # separate lists within active_submissions; if they can be run in parallel, there will be 
-                # one list inside active_submissions containing all the workflow submissions to run.
-                sublist = self.active_submissions[0]
-                for sub in sublist: 
-                    # if the submission hasn't yet been submitted, do it
-                    if sub.status is None:
-                        sub.create_submission(verbose=True)
-                    
-                    # if the submission hasn't finished, check its status
-                    if sub.status not in terminal_states: # to avoid overchecking
-                        sub.check_status(verbose) # check and update the status of the submission
-                    
-                    # if the submission has finished, count it
-                    if sub.status in terminal_states:
-                        count += 1
-                        if sub.wf_name not in self.tested_workflows:
-                            self.tested_workflows.append(sub.wf_name)
+        # define terminal states
+        terminal_states = set(['Done', 'Aborted'])
+
+        if len(self.active_submissions) > 0:
+            count = 0
+            # the way active_submissions is structured, if workflows need to be run in order, they will be 
+            # separate lists within active_submissions; if they can be run in parallel, there will be 
+            # one list inside active_submissions containing all the workflow submissions to run.
+            sublist = self.active_submissions[0]
+            for sub in sublist: 
+                # if the submission hasn't yet been submitted, do it
+                if sub.status is None:
+                    sub.create_submission(verbose=True)
                 
-                if verbose:
-                    # print progress
-                    print(datetime.today().strftime('%H:%M') \
-                        + ' - finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflow submissions: ' \
-                        + ', '.join(self.tested_workflows))
+                # if the submission hasn't finished, check its status
+                if sub.status not in terminal_states: # to avoid overchecking
+                    sub.check_status(verbose) # check and update the status of the submission
                 
-                # if all submissions are done, remove this set of submissions from the master submissions_list
-                if count == len(sublist):
-                    self.active_submissions.pop(0)
-                else:
-                    time.sleep(sleep_time)
-            else:
-                break_out = True
+                # if the submission has finished, count it
+                if sub.status in terminal_states:
+                    count += 1
+                    if sub.wf_name not in self.tested_workflows:
+                        self.tested_workflows.append(sub.wf_name)
+            
+            if verbose:
+                # print progress
+                print(datetime.today().strftime('%H:%M') \
+                    + ' - finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflow submissions: ' \
+                    + ', '.join(self.tested_workflows))
+            
+            # if all submissions are done, remove this set of submissions from the master submissions_list
+            if count == len(sublist):
+                self.active_submissions.pop(0)
+
     
     def generate_workspace_report(self, gcs_path, verbose=False):
         ''' generate a failure/success report for each workflow in a workspace, 

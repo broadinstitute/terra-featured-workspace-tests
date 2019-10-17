@@ -124,9 +124,17 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
     clone_ws = clone_workspace(project, workspace, clone_project, verbose)
 
     # create and monitor submissions
-    clone_ws.run_workflow_submission(sleep_time, verbose)
-    if verbose:
-        print(clone_ws.tested_workflows)
+    clone_ws.create_submissions(verbose=verbose)
+
+    break_out = False
+    while not break_out:
+        clone_ws.check_submissions(verbose=verbose)
+        if len(clone_ws.active_submissions) > 0: # if there are still active submissions
+            time.sleep(sleep_time) # note - TODO to fix: this currently has unintended behavior of waiting to submit the next submission when run in order
+        else:
+            break_out = True
+    # if verbose:
+    #     print(clone_ws.tested_workflows)
 
     # generate workspace report
     clone_ws.generate_workspace_report(gcs_path, verbose)
@@ -134,8 +142,21 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
     return clone_ws
 
 
+def test_one(args):
+    # run the test on a single workspace
+    ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
+                                    args.gcs_path, args.sleep_time, args.verbose)
+    report_path = ws.report_path
+    
+    # open the report
+    os.system('open ' + report_path)
+
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='')
+
     parser.add_argument('--clone_name', type=str, help='name of cloned workspace')
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--original_name', type=str, default='Sequence-Format-Conversion', help='name of workspace to clone')
@@ -149,12 +170,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # run the test on a single workspace
-    ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.gcs_path, args.sleep_time, args.verbose)
-    report_path = ws.report_path
+    test_one(args)
     
-    # open the report
-    os.system('open ' + report_path)
     
     

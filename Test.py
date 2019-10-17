@@ -103,8 +103,34 @@ def generate_master_report(gcs_path, verbose=False):
     return report_path
 
 
+def test_all(args):
+    # WIP
+    # get list of all Featured Workspaces
+    fws = format_fws(verbose = args.verbose)
+
+    fws_testing = {}
+    # run tests on all of them
+    for ws in fws.values():
+        print(ws.key)
+        fws_testing[ws.key] = clone_workspace(ws.project, ws.workspace, args.clone_project, args.verbose)
+
+    # create and monitor submissions
+    clone_ws.run_workflow_submission(sleep_time, verbose)
+    # if verbose:
+    #     print(clone_ws.tested_workflows)
+
+    # generate workspace report
+    clone_ws.generate_workspace_report(gcs_path, verbose)
+
+    return clone_ws
+
+
+    # open the master report
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--test_all', '-a', action='store_true', help='test all Featured Workspaces')
+
     parser.add_argument('--clone_name', type=str, help='name of cloned workspace')
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--original_name', type=str, default='Sequence-Format-Conversion', help='name of workspace to clone')
@@ -133,55 +159,59 @@ if __name__ == '__main__':
     # if args.test_notebook:
     #     clone_name = 'do not clone'
 
-    if args.do_submission:
-        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
-
-    if args.test_notebook: # work in progress!
-        # # # clone a workspace that has notebooks
-        # args.original_project = 'fc-product-demo'
-        # args.original_name = 'Terra_Quickstart_Workspace'
-        # clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
-        
-        clone_name = 'Terra_Quickstart_Workspace_2019-09-03-15-19-28'
-
-        run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
-        run_notebook_submission(args.clone_project, clone_name, args.verbose)
- 
-    if args.test_fail:
-        # this submission has failures
-        project = 'fccredits-curium-coral-4194'
-        workspace = 'Germline-SNPs-Indels-GATK4-b37-EX06test'
-
-        # # this submission has failures and successes
-        # project = 'featured-workspace-testing'
-        # workspace = 'Germline-SNPs-Indels-GATK4-hg38_2019-08-20-14-11-56'
-    # else:
-    #     project = args.clone_project
-    #     workspace = clone_name
-
-    if args.test_master:
-        report_path = generate_master_report(args.gcs_path, args.verbose)
-        os.system('open ' + report_path)
+    if args.test_all:
+        test_all(args)
+    
     else:
-        # run the report and open it
-        html_output, status = generate_workspace_report(project, workspace, args.gcs_path, args.verbose)
-        os.system('open ' + html_output)
+        if args.do_submission:
+            run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
+
+        if args.test_notebook: # work in progress!
+            # # # clone a workspace that has notebooks
+            # args.original_project = 'fc-product-demo'
+            # args.original_name = 'Terra_Quickstart_Workspace'
+            # clone_name = clone_workspace(args.original_project, args.original_name, args.clone_project)
+            
+            clone_name = 'Terra_Quickstart_Workspace_2019-09-03-15-19-28'
+
+            run_workflow_submission(args.clone_project, clone_name, args.sleep_time, args.verbose)
+            run_notebook_submission(args.clone_project, clone_name, args.verbose)
+    
+        if args.test_fail:
+            # this submission has failures
+            project = 'fccredits-curium-coral-4194'
+            workspace = 'Germline-SNPs-Indels-GATK4-b37-EX06test'
+
+            # # this submission has failures and successes
+            # project = 'featured-workspace-testing'
+            # workspace = 'Germline-SNPs-Indels-GATK4-hg38_2019-08-20-14-11-56'
+        # else:
+        #     project = args.clone_project
+        #     workspace = clone_name
+
+        if args.test_master:
+            report_path = generate_master_report(args.gcs_path, args.verbose)
+            os.system('open ' + report_path)
+        else:
+            # run the report and open it
+            html_output, status = generate_workspace_report(project, workspace, args.gcs_path, args.verbose)
+            os.system('open ' + html_output)
 
 
 
 
-    # # test the master report
+        # # test the master report
 
-    # master_ws_list = []
-    # master_ws_list.append(Wspace(workspace = 'clone_name1',
-    #                             project = 'clone_project1',
-    #                             workflows = ['finished_workflows1'],
-    #                             status='FAILURE!',
-    #                             report_path='some_path1.html'))
-    # master_ws_list.append(Wspace(workspace = 'clone_name2',
-    #                             project = 'clone_project2',
-    #                             workflows = ['finished_workflows2'],
-    #                             status='SUCCESS!',
-    #                             report_path='some_path2.html'))
-    # report_path = generate_master_report(master_ws_list, '/tmp/', verbose=True)
-    # os.system('open ' + report_path)
+        # master_ws_list = []
+        # master_ws_list.append(Wspace(workspace = 'clone_name1',
+        #                             project = 'clone_project1',
+        #                             workflows = ['finished_workflows1'],
+        #                             status='FAILURE!',
+        #                             report_path='some_path1.html'))
+        # master_ws_list.append(Wspace(workspace = 'clone_name2',
+        #                             project = 'clone_project2',
+        #                             workflows = ['finished_workflows2'],
+        #                             status='SUCCESS!',
+        #                             report_path='some_path2.html'))
+        # report_path = generate_master_report(master_ws_list, '/tmp/', verbose=True)
+        # os.system('open ' + report_path)
