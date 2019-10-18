@@ -1,6 +1,7 @@
 import os
+import subprocess
 
-def upload_to_gcs(local_path, gcs_path, verbose=False):
+def upload_to_gcs(local_path, gcs_path, verbose=True):
 
     file_name = local_path.split('/')[-1] # this should be the name of the cloned workspace + '.html'
 

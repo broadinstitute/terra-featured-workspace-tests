@@ -28,16 +28,18 @@ def get_ws_bucket(project, name):
     return bucket
 
 
-def clone_workspace(original_project, original_name, clone_project, verbose=False):
+def clone_workspace(original_project, original_name, clone_project, clone_time=None, verbose=False):
     ''' clone a workspace, including everything in the notebooks folder in the google bucket
     '''
-    if verbose:
-        print('\nCloning ' + original_name)
-
+    
     # define the name of the cloned workspace
-    clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
+    if clone_time is None:
+        clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
     clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
-    error_message = ''                                              # will be filled if there's an error
+
+    if verbose:
+        print('\nCloning ' + original_name + ' to ' + clone_name)
+
 
     # clone the Featured Workspace & check for errors
     res = fapi.clone_workspace(original_project,
@@ -50,21 +52,24 @@ def clone_workspace(original_project, original_name, clone_project, verbose=Fals
     original_bucket = get_ws_bucket(original_project, original_name)
     clone_bucket = get_ws_bucket(clone_project, clone_name)
     
-    # TODO: check if the gsutil cp command is supposed to return something because it currently does not
-    if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the bucket isn't empty
-        gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
-        bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-        # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
-        # if type(bucket_files) == bytes:
-        #     bucket_files = bucket_files.decode().split('\n')
+    # don't copy notebooks for now
+    # # TODO: check if the gsutil cp command is supposed to return something because it currently does not
+    # if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the bucket isn't empty
+    #     gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
+    #     bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+    #     # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
+    #     # if type(bucket_files) == bytes:
+    #     #     bucket_files = bucket_files.decode().split('\n')
         
-        if verbose:
-            print('Notebook files copied: ')
-            # print(bucket_files)
-            list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
+    #     if verbose:
+    #         print('Notebook files copied: ')
+    #         # print(bucket_files)
+    #         list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
     clone_ws = Wspace(  workspace = clone_name,
                         project = clone_project,
+                        workspace_orig = original_name,
+                        project_orig = original_project,
                         notebooks = list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
                             
 
@@ -121,7 +126,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
     '''
 
     # clone workspace
-    clone_ws = clone_workspace(project, workspace, clone_project, verbose)
+    clone_ws = clone_workspace(project, workspace, clone_project, verbose=verbose)
 
     # create and monitor submissions
     clone_ws.create_submissions(verbose=verbose)

@@ -17,12 +17,14 @@ class Wflow:
         # create the tracking link
         if self.wfid:
             link = 'https://job-manager.dsde-prod.broadinstitute.org/jobs/' + self.wfid
+        elif self.subid:
+            link = 'https://app.terra.bio/#workspaces/' + self.project.replace(' ','%20') + '/' + self.workspace.replace(' ','%20') + '/job_history/' + self.subid
         else:
-            link = 'https://app.terra.bio/#workspaces/' + self.project + '/' + self.workspace + '/job_history/' + self.subid
+            link = 'https://app.terra.bio/#workspaces/' + self.project.replace(' ','%20') + '/' + self.workspace.replace(' ','%20') + '/job_history/'
         self.link = link
 
     def get_HTML(self):
-        if self.status == 'Failed':
+        if (self.status == 'Failed') or (self.status == 'Nonstarter'):
             status_color = 'red'
             error_message = '<br>Error message: <font color=' + status_color + '>' + str(self.message) + '</font>'
         elif self.status == 'Aborted':

@@ -10,8 +10,7 @@ from firecloud import api
 def cleanup_workspaces(project, age_days, verbose=False):
     
     # hard code any cloned workspaces we do NOT want to delete
-    exceptions = ["AH_template_copy_Germline-SNPs-Indels-GATK4-hg38_2019-09-06-10-30-37",
-                  "Germline-SNPs-Indels-GATK4-hg38_2019-08-20-15-51-50"]
+    exceptions = []
     
     # get a list of all workspaces in the project
     ws_json = api.list_workspaces().json()
@@ -55,6 +54,6 @@ def cleanup_workspaces(project, age_days, verbose=False):
 if __name__ == "__main__":
 
     project = "featured-workspace-testing"
-    age_days = 14 # in days
+    age_days = -1 # in days
 
     cleanup_workspaces(project, age_days, verbose=True)

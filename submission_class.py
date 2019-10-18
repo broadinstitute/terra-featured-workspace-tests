@@ -28,13 +28,20 @@ class Submission:
                                         self.wf_name, 
                                         self.entity_name, 
                                         self.entity_type)
-            fapi._check_response_code(ret, 201)
-            ret = ret.json()
+            if ret.status_code == 400:
+                self.status = 'Nonstarter'
+                self.message = ret.json()['message']
+                if verbose:
+                    print('SUBMISSION FAILED (error 400, status marked Nonstarter) - ' + self.wf_name)
+                    print(self.message)
+            else:
+                fapi._check_response_code(ret, 201)
+                ret = ret.json()
 
-            self.sub_id = ret['submissionId']
-            self.status = 'submission initialized in Python' # this will be set to the Terra status when check_status() is called
-            if verbose:
-                print(' submitted '+ self.wf_name)
+                self.sub_id = ret['submissionId']
+                self.status = 'submission initialized in Python' # this will be set to the Terra status when check_status() is called
+                if verbose:
+                    print('NEW SUBMISSION: ' + self.wf_name)
 
     def check_status(self, verbose=False):
         ''' check the status of a workflow submission using fiss
@@ -45,6 +52,6 @@ class Submission:
 
         self.status = sub_res['status']
         if verbose:
-            print('   ' + self.wf_name + ' status at ' +datetime.today().strftime('%H:%M')+ ' is '+ self.status)
+            print('    ' + datetime.today().strftime('%H:%M') + ' ' + self.status + ' - ' + self.wf_name)
                         
                        
