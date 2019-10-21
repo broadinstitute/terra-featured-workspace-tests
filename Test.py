@@ -67,8 +67,9 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
         workspaces_text += '<big>' + fws_dict[key].project_orig + '  /  ' + fws_dict[key].workspace_orig + \
                     ' - <font color=' + status_color + '>' + \
                     fws_dict[key].status + '</font></big>' + \
-                    ''' <a href=''' + fws_dict[key].report_path + ''' target='_blank'>[report]''' + \
-                    '</a><br><br>'
+                    ' (' + str(len(fws_dict[key].tested_workflows)) + ' workflows tested) ' + \
+                    '<a href=' + fws_dict[key].report_path + ''' target='_blank'>[report]</a>
+                    <br><br>'''
     
 
     if clone_time is None:

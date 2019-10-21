@@ -148,7 +148,7 @@ class Wspace:
                         self.tested_workflows.append(sub)
             
             if verbose:
-                print('   Finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflows in this set of submissions')
+                print('    Finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflows in this set of submissions')
 
             # if all submissions are done, remove this set of submissions from the master submissions_list
             if count == len(sublist):
