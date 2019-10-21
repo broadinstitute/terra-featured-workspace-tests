@@ -19,7 +19,7 @@ class Submission:
     def create_submission(self, verbose=False): 
         ''' create a workflow submission using fiss
         '''
-        #TODO: Only run if status is None 
+        # only run if status is None 
         # create a submission to run for this workflow
         if self.status is None:
             ret = fapi.create_submission(self.project, 
@@ -28,11 +28,12 @@ class Submission:
                                         self.wf_name, 
                                         self.entity_name, 
                                         self.entity_type)
-            if ret.status_code == 400:
+            if ret.status_code == 400 or 404:
                 self.status = 'Nonstarter'
                 self.message = ret.json()['message']
                 if verbose:
-                    print('SUBMISSION FAILED (error 400, status marked Nonstarter) - ' + self.wf_name)
+                    print('SUBMISSION FAILED (error ' + str(ret.status_code) + \
+                        ', status marked Nonstarter) - ' + self.wf_name)
                     print(self.message)
             else:
                 fapi._check_response_code(ret, 201)

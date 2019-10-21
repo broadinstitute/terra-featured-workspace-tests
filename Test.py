@@ -64,9 +64,10 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
         else:
             status_color = 'black'
 
-        workspaces_text += '''<a href=''' + fws_dict[key].report_path + ''' target='_blank'>''' 
-        workspaces_text += fws_dict[key].workspace + '</a> - <font color=' + status_color + '>' + fws_dict[key].status + '</font>'
-        workspaces_text += '<br><br>'
+        workspaces_text += fws_dict[key].workspace_orig + \
+                    ''' <a href=''' + fws_dict[key].report_path + ''' target='_blank'>link to cloned workspace''' + \
+                    '</a> - <font color=' + status_color + '>' + fws_dict[key].status + '</font>' + \
+                    '<br><br>'
     
 
     if clone_time is None:
@@ -87,8 +88,14 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
     <span style='vertical-align: middle;'>
     Featured Workspace Report: Master list</span></h1></center></div>
   
+    <br><br>Test started: 
+    ''' + clone_time
+    '''
+    <br>Test finished: 
+    ''' + datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
+    '''
     <br><br>
-    <h2>Workspaces:</h2> 
+    <h2>Workspaces tested:</h2> 
     ''' + workspaces_text + '''
     <br>
     </p>
@@ -114,7 +121,7 @@ def test_all(args):
     fws = format_fws(verbose=False) 
 
     # temporary for testing
-    n_test = 6
+    n_test = 10
     copy_fws = {}
     for key in fws.keys():
         if len(copy_fws) < n_test:
