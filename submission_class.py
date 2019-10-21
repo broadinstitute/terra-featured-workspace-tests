@@ -29,7 +29,7 @@ class Submission:
                                         self.wf_name, 
                                         self.entity_name, 
                                         self.entity_type)
-            if ret.status_code == 400 or 404:
+            if ret.status_code in [400, 404]:
                 self.status = 'Nonstarter'
                 self.message = ret.json()['message']
                 if verbose:

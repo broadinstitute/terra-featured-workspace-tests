@@ -118,7 +118,7 @@ class Wspace:
             self.active_submissions = submissions_list
 
 
-    def check_submissions(self, verbose=False):
+    def check_submissions(self, verbose=True):
         # SUBMIT the submissions and check status
         
         # define terminal states
@@ -143,22 +143,19 @@ class Wspace:
                 if sub.status in terminal_states:
                     count += 1
                     if sub.wf_name not in (wfsub.wf_name for wfsub in self.tested_workflows):
-                        # a janky way to pass an error message from the Submission class to a future Wflow class
-                        # this just appends the full submission as a list item in tested_workflows
+                        # to pass an error message from the Submission class to a future Wflow class,
+                        # append the full submission as a list item in tested_workflows
                         self.tested_workflows.append(sub)
             
             if verbose:
-                # print progress
-                print(datetime.today().strftime('%H:%M') \
-                    + ' - finished workflow submissions: ' \
-                    + ', '.join([wfsub.wf_name for wfsub in self.tested_workflows]))
-            
+                print('   Finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflows in this set of submissions')
+
             # if all submissions are done, remove this set of submissions from the master submissions_list
             if count == len(sublist):
                 self.active_submissions.pop(0)
+                # immediately submit the next submission if there is one
+                self.check_submissions()
 
-            # troubleshooting
-            print('count=' + str(count) + ', len(sublist)=' + str(len(sublist)))
     
     def generate_workspace_report(self, gcs_path, verbose=False):
         ''' generate a failure/success report for each workflow in a workspace, 
@@ -322,6 +319,7 @@ class Wspace:
         <br><br><h2><b> Cloned Workspace: </b>
         <a href='''+workspace_link+''' target='_blank'>''' + self.workspace + ''' </a></h2>
         <big><b> Featured Workspace: </b>''' + self.workspace_orig + ''' </big>
+        <br>
         <big><b> Billing Project: </b>''' + self.project_orig + ''' </big>
         <br><br><big><b> Workflows: </b>''' + ', '.join(workflows_list) + ''' </big>
         <br><big><b> Notebooks: </b>''' + ', '.join(notebooks_list) + ''' </big>

@@ -64,10 +64,11 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
         else:
             status_color = 'black'
 
-        workspaces_text += fws_dict[key].workspace_orig + \
-                    ''' <a href=''' + fws_dict[key].report_path + ''' target='_blank'>link to cloned workspace''' + \
-                    '</a> - <font color=' + status_color + '>' + fws_dict[key].status + '</font>' + \
-                    '<br><br>'
+        workspaces_text += '<big>' + fws_dict[key].project_orig + '  /  ' + fws_dict[key].workspace_orig + \
+                    ' - <font color=' + status_color + '>' + \
+                    fws_dict[key].status + '</font></big>' + \
+                    ''' <a href=''' + fws_dict[key].report_path + ''' target='_blank'>[report]''' + \
+                    '</a><br><br>'
     
 
     if clone_time is None:
@@ -88,18 +89,14 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
     <span style='vertical-align: middle;'>
     Featured Workspace Report: Master list</span></h1></center></div>
   
-    <br><br>Test started: 
-    ''' + clone_time
-    '''
-    <br>Test finished: 
-    ''' + datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
-    '''
     <br><br>
     <h2>Workspaces tested:</h2> 
     ''' + workspaces_text + '''
     <br>
     </p>
 
+    <br><br>Test started: ''' + clone_time + '''
+    <br>Test finished: ''' + datetime.today().strftime('%Y-%m-%d-%H-%M-%S') + '''
     </p></body>
     </html>'''
 
@@ -120,14 +117,14 @@ def test_all(args):
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False) 
 
-    # temporary for testing
-    n_test = 10
-    copy_fws = {}
-    for key in fws.keys():
-        if len(copy_fws) < n_test:
-            copy_fws[key] = fws[key]
-    fws = dict(copy_fws)
-    print(fws.keys())
+    # # temporary for testing
+    # n_test = 2
+    # copy_fws = {}
+    # for key in fws.keys():
+    #     if len(copy_fws) < n_test:
+    #         copy_fws[key] = fws[key]
+    # fws = dict(copy_fws)
+    # print(fws.keys())
 
 
     fws_testing = {}
@@ -155,7 +152,7 @@ def test_all(args):
             
             # check status of all submissions
             if clone_ws.status is None:
-                clone_ws.check_submissions(verbose=False)
+                clone_ws.check_submissions()
                 if len(clone_ws.active_submissions) == 0: # if all submissions in this workspace are DONE
                     # generate workspace report
                     clone_ws.generate_workspace_report(gcs_path_subfolder, args.verbose)
@@ -164,8 +161,10 @@ def test_all(args):
                 count_done += 1
                 print('    ' + clone_ws.status)
 
-        # troubleshooting
-        print('count_done=' + str(count_done) + ', len(fws)=' + str(len(fws_testing)))
+        # track progress
+        if args.verbose:
+            print('Finished ' + str(count_done) + ' of ' + str(len(fws_testing)) + ' Featured Workspaces to be tested')
+        
         if count_done == len(fws_testing): # if all the submissions in all workspaces are done 
             break_out = True
         else:
