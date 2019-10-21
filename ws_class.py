@@ -142,14 +142,16 @@ class Wspace:
                 # if the submission has finished, count it
                 if sub.status in terminal_states:
                     count += 1
-                    if sub.wf_name not in self.tested_workflows:
-                        self.tested_workflows.append(sub.wf_name)
+                    if sub.wf_name not in (wfsub.wf_name for wfsub in self.tested_workflows):
+                        # a janky way to pass an error message from the Submission class to a future Wflow class
+                        # this just appends the full submission as a list item in tested_workflows
+                        self.tested_workflows.append(sub)
             
             if verbose:
                 # print progress
                 print(datetime.today().strftime('%H:%M') \
                     + ' - finished workflow submissions: ' \
-                    + ', '.join(self.tested_workflows))
+                    + ', '.join([wfsub.wf_name for wfsub in self.tested_workflows]))
             
             # if all submissions are done, remove this set of submissions from the master submissions_list
             if count == len(sublist):
@@ -246,20 +248,20 @@ class Wspace:
             workflow_dict[wf_name] = sub_dict
 
         # check if there were any workflows whose submission failed
-        for wf in self.tested_workflows:
+        for wfsub in self.tested_workflows:
             sub_dict = {}
-            if wf not in list(workflow_dict.keys()):
+            if wfsub.wf_name not in list(workflow_dict.keys()):
                 count += 1
                 key = 'no_wfid_'+str(count)
                 sub_dict[key] = Wflow(workspace=self.workspace,
                                           project=self.project,
                                           wfid=None,
                                           subid=None,
-                                          wfname=wf,
+                                          wfname=wfsub.wf_name,
                                           entity=None,
-                                          status='Nonstarter',
-                                          message='Nonstarter') # TODO: pull the actual error message, currently stored in a deleted Submission class ugh
-                workflow_dict[wf] = sub_dict
+                                          status=wfsub.status,
+                                          message=wfsub.message) 
+                workflow_dict[wfsub.wf_name] = sub_dict
                 Failed = True
 
         # sanity check

@@ -15,6 +15,7 @@ class Submission:
     entity_type: str    # data entity type
     sub_id: str = None  # submission Id
     status: str = None  # status of submission 
+    message: str = None # error message
     
     def create_submission(self, verbose=False): 
         ''' create a workflow submission using fiss
