@@ -131,12 +131,12 @@ def test_all(args):
     fws_testing = {}
     # set up to run tests on all of them
     for ws in fws.values():
-        # FOR NOW (maybe forever): only test on help-gatk billing project workspaces!
-        if ws.project == 'help-gatk':
-            clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, clone_time=clone_time, verbose=args.verbose)
-            clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
-            clone_ws.check_submissions(verbose=False) # start them
-            fws_testing[ws.key] = clone_ws
+        # # FOR NOW (maybe forever): only test on help-gatk billing project workspaces!
+        # if ws.project == 'help-gatk':
+        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, clone_time=clone_time, verbose=args.verbose)
+        clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
+        clone_ws.check_submissions(verbose=False) # start them
+        fws_testing[ws.key] = clone_ws
 
     # monitor submissions
     break_out = False
