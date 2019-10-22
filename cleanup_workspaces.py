@@ -1,11 +1,8 @@
 from datetime import datetime
 import json
 import time
-from firecloud import api
-# import pprint
-
-# # for troubleshooting
-# pp = pprint.PrettyPrinter(indent=4)
+from firecloud import api as fapi
+from fiss_fns import call_fiss
 
 def cleanup_workspaces(project, age_days, verbose=False):
     
@@ -13,7 +10,8 @@ def cleanup_workspaces(project, age_days, verbose=False):
     exceptions = []
     
     # get a list of all workspaces in the project
-    ws_json = api.list_workspaces().json()
+    ws_json = call_fiss(fapi.list_workspaces, 200)
+    # ws_json = fapi.list_workspaces().json()
     ws_all = []
     for ws in ws_json:
         ws_project = ws["workspace"]["namespace"]
@@ -44,7 +42,8 @@ def cleanup_workspaces(project, age_days, verbose=False):
     
     # delete those old workspaces
     for ws in ws_to_delete:
-        api.delete_workspace(project, ws)
+        call_fiss(fapi.delete_workspace, 202, project, ws)
+        # fapi.delete_workspace(project, ws)
         if verbose:
             print(ws + " deleted")
 

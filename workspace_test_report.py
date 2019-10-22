@@ -8,22 +8,14 @@ from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
 from submission_class import Submission
+from fiss_fns import call_fiss
 
-# from tenacity import retry
-
-## for troubleshooting
-# import pprint
-# pp = pprint.PrettyPrinter(indent=4)
-
-# TODO: add tenacity @retry for api calls
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace
     '''
     # call the api, check for errors, pull out the bucket name
-    res = fapi.get_workspace(project, name)
-    fapi._check_response_code(res, 200)
-    workspace = res.json()
+    workspace = call_fiss(fapi.get_workspace, 200, project, name)
     bucket = workspace['workspace']['bucketName']
     return bucket
 
@@ -42,11 +34,10 @@ def clone_workspace(original_project, original_name, clone_project, clone_time=N
 
 
     # clone the Featured Workspace & check for errors
-    res = fapi.clone_workspace(original_project,
+    call_fiss(fapi.clone_workspace, 201, original_project,
                             original_name,
                             clone_project,
                             clone_name)
-    fapi._check_response_code(res, 201)
     
     # get gs addresses of original & cloned workspace buckets
     original_bucket = get_ws_bucket(original_project, original_name)

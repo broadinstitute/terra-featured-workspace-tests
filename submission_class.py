@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from firecloud import api as fapi
+from fiss_fns import call_fiss
 
 @dataclass
 class Submission:
@@ -23,6 +24,7 @@ class Submission:
         # only run if status is None 
         # create a submission to run for this workflow
         if self.status is None:
+            # TODO incorporate call_fiss function or a similar one that can handle the 400/404 errors with output
             ret = fapi.create_submission(self.project, 
                                         self.workspace, 
                                         self.wf_project, 
@@ -48,9 +50,10 @@ class Submission:
     def check_status(self, verbose=False):
         ''' check the status of a workflow submission using fiss
         '''
-        sub_res = fapi.get_submission(self.project, self.workspace, self.sub_id)
-        fapi._check_response_code(sub_res, 200)
-        sub_res = sub_res.json()
+        sub_res = call_fiss(fapi.get_submission, 200, self.project, self.workspace, self.sub_id)
+        # sub_res = fapi.get_submission(self.project, self.workspace, self.sub_id)
+        # fapi._check_response_code(sub_res, 200)
+        # sub_res = sub_res.json()
 
         self.status = sub_res['status']
         if verbose:

@@ -9,12 +9,12 @@ from dataclasses import dataclass, field
 from firecloud import api as fapi
 from submission_class import Submission
 from gcs_fns import upload_to_gcs
+from fiss_fns import call_fiss
 
 
 @dataclass
 class Wspace:
     '''Class for keeping track of info for Terra workspaces.'''
-    # TODO: probably want to store both original and cloned names/projects
     # TODO: make workspace, project immutable / set once
     # TODO: make a constructor that sets this up straight from the json from FISS
     workspace: str              # workspace name
@@ -41,9 +41,7 @@ class Wspace:
             print('\nRunning workflow submissions on '+workspace)
     
         # Get a list of workflows in the project
-        res = fapi.list_workspace_configs(project, workspace, allRepos = True)
-        fapi._check_response_code(res, 200)
-        res = res.json()    # convert to json
+        res = call_fiss(fapi.list_workspace_configs, 200, project, workspace, allRepos = True)
 
         # set up submission classes and structure them as lists
         if len(res) > 0: # only proceed if there are workflows
@@ -63,11 +61,11 @@ class Wspace:
                 wf_name = item['name']              # the name of the workflow
 
                 # get and store the name of the data (entity) being used, if any
-                entities = fapi.get_entities(project, workspace, entityType)
+                entities = call_fiss(fapi.get_entities, 200, project, workspace, entityType)
                 entityName = None
-                if len(entities.json()) != 0:
+                if len(entities) != 0:
                     allEntities = []
-                    for ent in entities.json():
+                    for ent in entities:
                         allEntities.append(ent['name'])
                     
                     # if there's a _test entity, use it
@@ -166,9 +164,8 @@ class Wspace:
             print('\nGenerating workspace report for '+self.workspace)
 
         workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
-        res = fapi.list_submissions(self.project, self.workspace)
-        fapi._check_response_code(res, 200)
-        res = res.json()
+        
+        res = call_fiss(fapi.list_submissions, 200, self.project, self.workspace)
 
         count = 0
         Failed = False
@@ -184,7 +181,8 @@ class Wspace:
 
             FailedMess = []
 
-            for i in fapi.get_submission(self.project, self.workspace, submission_id).json()['workflows']:
+            sub_response = call_fiss(fapi.get_submission, 200, self.project, self.workspace, submission_id)
+            for i in sub_response['workflows']:
                 # each i in here corresponds with a single workflow with a given entity
                 
                 # if this workflow has an entity, store its name
@@ -199,7 +197,7 @@ class Wspace:
                     key = wfid                  # use the workflowId as the key for the dictionary
 
                     # get more details from the workflow: status, error message
-                    resworkspace = fapi.get_workflow_metadata(self.project, self.workspace, submission_id, wfid).json()
+                    resworkspace = call_fiss(fapi.get_workflow_metadata, 200, self.project, self.workspace, submission_id, wfid)
                     mess_details = None
                     wf_status = resworkspace['status']
 

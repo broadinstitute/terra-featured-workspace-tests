@@ -9,6 +9,7 @@ from firecloud import api as fapi
 from dataclasses import dataclass
 from workspace_test_report import list_notebooks
 from ws_class import Wspace
+from fiss_fns import call_fiss
 
 
 def get_fw_json():
@@ -40,11 +41,10 @@ def format_fws(get_info=False, verbose=True):
 
         if get_info:
             ### Extract workflows
-            res_wf = fapi.list_workspace_configs(ws_project, ws_name, allRepos = True)
-            fapi._check_response_code(res_wf, 200)
+            res_wf = call_fiss(fapi.list_workspace_configs, 200, ws_project, ws_name, allRepos=True)
 
             wfs = []
-            for wf in res_wf.json():
+            for wf in res_wf:
                 wf_name = wf['name']
                 wfs.append(wf_name)
             
