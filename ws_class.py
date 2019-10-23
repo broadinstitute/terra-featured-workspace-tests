@@ -4,7 +4,6 @@ import time
 import argparse
 import subprocess
 from datetime import datetime
-from wflow_class import Wflow
 from dataclasses import dataclass, field
 from firecloud import api as fapi
 from submission_class import Submission
@@ -30,7 +29,9 @@ class Wspace:
 
     def __post_init__(self):
         # create the Terra link
-        self.link = 'https://app.terra.bio/#workspaces/' + self.project.replace(' ','%20') + '/' + self.workspace.replace(' ','%20') + '/job_history/'
+        self.link = 'https://app.terra.bio/#workspaces/{project}/{workspace}/job_history'\
+                            .format(project=self.project.replace(' ','%20'),
+                                    workspace=self.workspace.replace(' ','%20'))
         self.key = self.project + '/' + self.workspace
         #self.notebooks = list_notebooks(self.project, self.workspace, ipynb_only=True, verbose=False)
 
@@ -141,8 +142,9 @@ class Wspace:
                 if sub.status in terminal_states:
                     count += 1
                     if sub.wf_name not in (wfsub.wf_name for wfsub in self.tested_workflows):
-                        # to pass an error message from the Submission class to a future Wflow class,
+                        # get final status & error messages
                         # append the full submission as a list item in tested_workflows
+                        sub.get_final_status()
                         self.tested_workflows.append(sub)
             
             if verbose:
@@ -162,113 +164,16 @@ class Wspace:
         '''
         if verbose:
             print('\nGenerating workspace report for '+self.workspace)
-
-        workflow_dict = {} # this will collect all workflows, each of which contains sub_dict of submissions for that workflow
         
-        res = call_fiss(fapi.list_submissions, 200, self.project, self.workspace)
-
-        count = 0
-        Failed = False
-
-        for item in res:
-            # each item in res corresponds with a submission for one workflow that may contain multiple entities
-            wf_name = item['methodConfigurationName']
-            submission_id = item['submissionId']
-            if verbose:
-                print(' getting status and info for '+wf_name+' in submission '+submission_id)
-
-            sub_dict = {} # this will collect Wflow classes for all workflows within this submission (may be multiple if the workflow was run on multiple entities)
-
-            FailedMess = []
-
-            sub_response = call_fiss(fapi.get_submission, 200, self.project, self.workspace, submission_id)
-            for i in sub_response['workflows']:
-                # each i in here corresponds with a single workflow with a given entity
-                
-                # if this workflow has an entity, store its name
-                if 'workflowEntity' in i:
-                    entity_name = i['workflowEntity']['entityName']
-                else:
-                    entity_name = None
-
-                # if the workflow has a workflowId, meaning the submission completed, then get and store it
-                if 'workflowId' in i:
-                    wfid = i['workflowId']
-                    key = wfid                  # use the workflowId as the key for the dictionary
-
-                    # get more details from the workflow: status, error message
-                    resworkspace = call_fiss(fapi.get_workflow_metadata, 200, self.project, self.workspace, submission_id, wfid)
-                    mess_details = None
-                    wf_status = resworkspace['status']
-
-                    # in case of failure, pull out the error message
-                    if wf_status == 'Failed':
-                        for failed in resworkspace['failures']:
-                            for message in failed['causedBy']:
-                                mess_details = str(message['message'])
-                                Failed = True
-                    elif wf_status == 'Aborted':
-                        mess_details = 'Aborted'
-                        Failed = True
-                    
-                else: # if no workflowId
-                    count +=1                       # count of workflows with no workflowId
-                    wfid = None                     # store the wfid as None, since there is none
-                    key = 'no_wfid_'+str(count)     # create a key to use in the dict
-
-                    if i['status'] == 'Failed':
-                        wf_status = 'Failed'
-                        # get the error message for why it failed
-                        mess_details = str(i['messages'])[1:-1]
-                        Failed = True
-                    elif i['status'] == 'Aborted':
-                        wf_status = 'Aborted'
-                        mess_details = 'Aborted'
-                        Failed = True
-                    else: # should probably never get here, but just in case
-                        wf_status = i['status']
-                        mess_dtails = 'unrecognized status'
-                        Failed = True
-                
-                # store all this information in the dictionary containing workflow classes
-                sub_dict[key]=Wflow(workspace=self.workspace,
-                                    project=self.project,
-                                    wfid=wfid, 
-                                    subid=submission_id,
-                                    wfname=wf_name, 
-                                    entity=entity_name, 
-                                    status=wf_status, 
-                                    message=mess_details)
-
-            workflow_dict[wf_name] = sub_dict
-
-        # check if there were any workflows whose submission failed
+        failed = False
+        # see if any tested workflow didn't succeed
         for wfsub in self.tested_workflows:
-            sub_dict = {}
-            if wfsub.wf_name not in list(workflow_dict.keys()):
-                count += 1
-                key = 'no_wfid_'+str(count)
-                sub_dict[key] = Wflow(workspace=self.workspace,
-                                          project=self.project,
-                                          wfid=None,
-                                          subid=None,
-                                          wfname=wfsub.wf_name,
-                                          entity=None,
-                                          status=wfsub.status,
-                                          message=wfsub.message) 
-                workflow_dict[wfsub.wf_name] = sub_dict
-                Failed = True
-
-        # sanity check
-        for wf in workflow_dict:
-            print(wf)
-
-        ### the rest of this function sets up the html report
-        # probably TODO: make the report its own function
-        workspace_link = 'https://app.terra.bio/#workspaces/' + self.project.replace(' ','%20') + '/' + self.workspace.replace(' ','%20') + '/job_history'
-
+            if wfsub.status != 'Succeeded':
+                failed = True
+         
+        ## set up the html report
         # if there were ANY failures
-        if Failed:
+        if failed:
             status_text = 'FAILURE!'
             status_color = 'red'
         else:
@@ -276,26 +181,22 @@ class Wspace:
             status_color = 'green'
 
         # make a list of the workflows
-        workflows_list = self.workflows #list(workflow_dict.keys())
+        workflows_list = list(wfsub.wf_name for wfsub in self.tested_workflows) #self.workflows #list(workflow_dict.keys())
 
         # make a list of the notebooks
-        notebooks_list = self.notebooks #list_notebooks(project, workspace, ipynb_only=True)
+        notebooks_list = ['These tests do not currently test notebooks'] #self.notebooks #list_notebooks(project, workspace, ipynb_only=True)
         # if len(notebooks_list) == 0:
         #     notebooks_list = ['No notebooks in workspace']
         
         # generate detail text from workflows
         workflows_text = ''
-        for wf in workflow_dict.keys():
-            wf_name = wf
-            workflows_text += '<h3>'+wf_name+'</h3>'
-            workflows_text += '<blockquote>'
-            sub_dict = workflow_dict[wf]
-            for sub in sub_dict.values():
-                workflows_text += sub.get_HTML()
-            workflows_text += '</blockquote>'
+        for wfsub in self.tested_workflows:
+            workflows_text += '<h3>{wf_name}</h3><blockquote>{html}</blockquote>'\
+                                    .format(wf_name = wfsub.wf_name, 
+                                            html = wfsub.get_HTML())
         
         # generate detail text from notebooks
-        notebooks_text = ''
+        notebooks_text = notebooks_list
 
         html_output = self.workspace.replace(' ','_') + '.html'
         local_path = '/tmp/' + html_output
@@ -313,27 +214,35 @@ class Wspace:
         Featured Workspace Report</span></h1>
 
         <h1><font color={status_color}>{status_text}</font></h1></center> <br><br>
-        
         <br><br><h2><b> Cloned Workspace: </b>
-        <a href='''+workspace_link+''' target='_blank'>''' + self.workspace + ''' </a></h2>
-        <big><b> Featured Workspace: </b>''' + self.workspace_orig + ''' </big>
+        <a href={workspace_link} target='_blank'>{workspace}</a></h2>
+        <big><b> Featured Workspace: </b>{workspace_orig}</big>
         <br>
-        <big><b> Billing Project: </b>''' + self.project_orig + ''' </big>
-        <br><br><big><b> Workflows: </b>''' + ', '.join(workflows_list) + ''' </big>
-        <br><big><b> Notebooks: </b>''' + ', '.join(notebooks_list) + ''' </big>
+        <big><b> Billing Project: </b>{project_orig}</big>
+        <br><br><big><b> Workflows: </b>{wf_list}</big>
+        <br><big><b> Notebooks: </b>{nb_list}</big>
         <br>
         <h2>Workflows:</h2>
-        <blockquote> ''' + workflows_text + ''' </blockquote>
+        <blockquote>{wf_text}</blockquote>
         <br>
         <h2>Notebooks:</h2>
-        <blockquote> ''' + notebooks_text + ''' </blockquote>
+        <blockquote>{nb_text}</blockquote>
         </p>
 
         </p></body>
         </html>'''
 
         message = message.format(status_color = status_color,
-                                status_text = status_text)
+                                status_text = status_text,
+                                workspace_link = self.link,
+                                workspace = self.workspace,
+                                workspace_orig = self.workspace_orig,
+                                project_orig = self.project_orig,
+                                wf_list = ', '.join(workflows_list),
+                                nb_list = ', '.join(notebooks_list),
+                                wf_text = workflows_text,
+                                nb_text = notebooks_text
+                                )
         f.write(message)
         f.close()
 

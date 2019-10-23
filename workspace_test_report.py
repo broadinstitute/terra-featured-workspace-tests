@@ -1,13 +1,10 @@
 import os
-import json
 import time
 import argparse
 import subprocess
 from datetime import datetime
-from wflow_class import Wflow
 from ws_class import Wspace
 from firecloud import api as fapi
-from submission_class import Submission
 from fiss_fns import call_fiss
 
 
