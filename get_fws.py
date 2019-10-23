@@ -2,11 +2,8 @@ import requests
 import json
 import csv
 import os
-import pprint
-import subprocess
 import argparse
 from firecloud import api as fapi
-from dataclasses import dataclass
 from workspace_test_report import list_notebooks
 from ws_class import Wspace
 from fiss_fns import call_fiss

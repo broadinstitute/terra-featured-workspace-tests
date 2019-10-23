@@ -1,15 +1,8 @@
-import os
-import json
-import time
-import argparse
-import subprocess
-from datetime import datetime
 from dataclasses import dataclass, field
 from firecloud import api as fapi
 from submission_class import Submission
 from gcs_fns import upload_to_gcs
 from fiss_fns import call_fiss
-
 
 @dataclass
 class Wspace:
@@ -142,8 +135,7 @@ class Wspace:
                 if sub.status in terminal_states:
                     count += 1
                     if sub.wf_name not in (wfsub.wf_name for wfsub in self.tested_workflows):
-                        # get final status & error messages
-                        # append the full submission as a list item in tested_workflows
+                        # get final status & error messages; append the full submission as a list item in tested_workflows
                         sub.get_final_status()
                         self.tested_workflows.append(sub)
             
