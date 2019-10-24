@@ -6,31 +6,31 @@ Note: Currently this code tests all workflows within a Featured Workspace, but i
 ### Quickstart
 To run a test of **all Featured Workspaces** (everything [here](https://app.terra.bio/#library/showcase)), from the command line, run:
 
-    `python3 featured_workspaces_test.py -v`
+    python3 featured_workspaces_test.py -v
 - the `-v` flag (for verbose) will print progress
 
 To run a test on a **single workspace**, from the command line, run:
 
-    `python3 workspace_test_report.py -v --original_name [name of workspace] --original_project [billing project]`
+    python3 workspace_test_report.py -v --original_name [name of workspace] --original_project [billing project]
 
 For example:
 
-    `python3 workspace_test_report.py -v --original_name Sequence-Format-Conversion --original_project help-gatk`
+    python3 workspace_test_report.py -v --original_name Sequence-Format-Conversion --original_project help-gatk
 - note that the default setting for original_project is already 'help-gatk'
 
 ### Quickstart with Docker image
 Enter Docker image interactively:
 
-    `docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest`
+    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest
 
-Run test on all workspaces:
+Then run test on all workspaces:
 
-    `python3 scripts/featured_workspaces_test.py -v`
+    python3 scripts/featured_workspaces_test.py -v
 
 
 Or, run it all:
 
-    `docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/featured_workspaces_test.py -v`
+    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/featured_workspaces_test.py -v
 
 ### Cleanup
 To delete workspaces, use `cleanup_workspaces.py`. 
@@ -39,11 +39,11 @@ To delete workspaces, use `cleanup_workspaces.py`.
 - You can delete all workspaces whose name contains a string using `--match_str [string to match]`
 
 For example, this line will delete all workspaces created in the 2019-10-23-17-48-44 test:
-    `python3 cleanup_workspaces.py --match_str 2019-10-23-17-48-44`
+    python3 cleanup_workspaces.py --match_str 2019-10-23-17-48-44
 
 
 Or using Docker:
-    `docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/cleanup_workspaces.py -v --match_str 2019-10-23-17-48-44`
+    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/cleanup_workspaces.py -v --match_str 2019-10-23-17-48-44
 
 
 ### The test on an individual workspace proceeds as follows:
@@ -52,7 +52,7 @@ Or using Docker:
 - run workflow submissions for each workflow in the workspace
 - query the job history of the completed submissions and generate a report
 - publish the report to a google bucket and set permissions to be viewable by anyone
-    - the default google bucket is gs://dsp-fieldeng/fw_reports/
+    - the default google bucket, which you can change using the `--gcs_path` flag, is [gs://dsp-fieldeng/fw_reports/](https://console.cloud.google.com/storage/browser/dsp-fieldeng/fw_reports?project=broad-dsde-dev)
 
 
 

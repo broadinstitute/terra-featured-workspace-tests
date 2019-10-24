@@ -1,6 +1,7 @@
 import os
 import argparse
-import datetime
+import time
+from datetime import datetime
 from workspace_test_report import clone_workspace
 from get_fws import format_fws
 from gcs_fns import upload_to_gcs
@@ -119,20 +120,20 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
 
 def test_all(args):
     # make a folder for this set of tests (folder name is current timestamp)
-    clone_time = datetime.datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
+    clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
     gcs_path_subfolder = args.gcs_path + clone_time + '/'
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False) 
 
-    # # temporary for testing
-    # n_test = 2
-    # copy_fws = {}
-    # for key in fws.keys():
-    #     if len(copy_fws) < n_test:
-    #         copy_fws[key] = fws[key]
-    # fws = dict(copy_fws)
-    # print(fws.keys())
+    # temporary for testing
+    n_test = 1
+    copy_fws = {}
+    for key in fws.keys():
+        if len(copy_fws) < n_test:
+            copy_fws[key] = fws[key]
+    fws = dict(copy_fws)
+    print(fws.keys())
 
 
     fws_testing = {}
