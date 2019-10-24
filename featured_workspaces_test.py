@@ -1,6 +1,6 @@
 import os
 import argparse
-import datetime
+from datetime import datetime
 from workspace_test_report import clone_workspace
 from get_fws import format_fws
 from gcs_fns import upload_to_gcs
