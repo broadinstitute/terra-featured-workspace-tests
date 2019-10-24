@@ -126,14 +126,14 @@ def test_all(args):
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False) 
 
-    # temporary for testing
-    n_test = 1
-    copy_fws = {}
-    for key in fws.keys():
-        if len(copy_fws) < n_test:
-            copy_fws[key] = fws[key]
-    fws = dict(copy_fws)
-    print(fws.keys())
+    # # temporary for troubleshooting/testing
+    # n_test = 1
+    # copy_fws = {}
+    # for key in fws.keys():
+    #     if len(copy_fws) < n_test:
+    #         copy_fws[key] = fws[key]
+    # fws = dict(copy_fws)
+    # print(fws.keys())
 
 
     fws_testing = {}
