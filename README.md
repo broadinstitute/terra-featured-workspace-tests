@@ -5,15 +5,32 @@ Note: Currently this code tests all workflows within a Featured Workspace, but i
 
 ### Quickstart
 To run a test of **all Featured Workspaces** (everything [here](https://app.terra.bio/#library/showcase)), from the command line, run:
+
 `python3 featured_workspaces_test.py -v`
 - the `-v` flag (for verbose) will print progress
 
 To run a test on a **single workspace**, from the command line, run:
+
 `python3 workspace_test_report.py -v --original_name [name of workspace] --original_project [billing project]`
 For example:
+
 `python3 workspace_test_report.py -v --original_name Sequence-Format-Conversion --original_project help-gatk`
 - note that the default setting for original_project is already 'help-gatk'
 
+### Quickstart with Docker image
+Enter Docker image:
+
+`docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest`
+
+Run test on all workspaces:
+
+`python3 scripts/featured_workspaces_test.py -v`
+
+### Cleanup
+To delete workspaces, use `cleanup_workspaces.py`. 
+- You can delete all workspaces older than x days using `--age_days x` 
+(and to delete all workspaces, use `--age_days -1`). 
+- You can delete all workspaces whose name contains a string using `--match_str [string to match]`
 
 ### The test on an individual workspace proceeds as follows:
 - clone the Featured Workspaces you want to test
