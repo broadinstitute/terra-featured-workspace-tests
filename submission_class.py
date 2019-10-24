@@ -76,6 +76,7 @@ class Submission:
 
             # in case of failure, pull out the error message
             if self.status == 'Failed':
+                self.message = ''
                 for failed in res['failures']:
                     for message in failed['causedBy']:
                         self.message += str(message['message'])
@@ -86,6 +87,7 @@ class Submission:
                 self.status = i['status']
             if self.status == 'Failed':
                 # get the error message(s) for why it failed
+                self.message = ''
                 for i in res['workflows']:
                     self.message += str(i['messages'])[1:-1]
             else: # should probably never get here, but just in case
