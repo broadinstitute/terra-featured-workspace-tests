@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 from workspace_test_report import clone_workspace
 from get_fws import format_fws
-from gcs_fns import upload_to_gcs, list_blobs
+from gcs_fns import upload_to_gcs
 from ws_class import Wspace
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
