@@ -21,16 +21,16 @@ For example:
 ### Quickstart with Docker image
 Enter Docker image interactively:
 
-    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest
+    docker run --rm -it -v "$HOME"/.config:/.config -v $PWD:/scripts broadinstitute/terra-featured-workspace-tests:latest
 
 Then run test on all workspaces:
 
     python3 scripts/featured_workspaces_test.py -v
 
 
-Or, run it all:
+Or, run it all in Docker:
 
-    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/featured_workspaces_test.py -v
+    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts broadinstitute/terra-featured-workspace-tests:latest python3 scripts/featured_workspaces_test.py -v
 
 ### Cleanup
 To delete workspaces, use `cleanup_workspaces.py`. 
@@ -43,7 +43,7 @@ For example, this line will delete all workspaces created in the 2019-10-23-17-4
 
 
 Or using Docker:
-    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts -it broadinstitute/terra-featured-workspace-tests:latest python3 scripts/cleanup_workspaces.py -v --match_str 2019-10-23-17-48-44
+    docker run --rm -v "$HOME"/.config:/.config -v $PWD:/scripts broadinstitute/terra-featured-workspace-tests:latest python3 scripts/cleanup_workspaces.py -v --match_str 2019-10-23-17-48-44
 
 
 ### The test on an individual workspace proceeds as follows:

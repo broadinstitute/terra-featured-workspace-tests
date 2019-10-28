@@ -21,6 +21,9 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
         else:
             print('\nGenerating master report')
 
+    # define path for images
+    gcs_path_imgs = gcs_path.replace('gs://','https://storage.cloud.google.com/').replace('fw_reports/','imgs/')
+
     if ws_dict is None:
         # get list of reports in gcs bucket
         system_command = "gsutil ls " + gcs_path
@@ -42,12 +45,13 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
                 if len(ws_orig)>0: # in case of empty string
                     for key in fws_keys:
                         if ws_orig in key:
+                            print(ws_orig)
                             finished_report_keys.append(key)
                             # populate the Wspace class with report_path
                             fws_dict[key].report_path = f.replace('gs://','https://storage.googleapis.com/')
                             # put in a status
                             if fws_dict[key].status is None:
-                                fws_dict[key].status = 'status unknown'
+                                fws_dict[key].status = 'SUCCESS!'
     else:
         fws_dict = ws_dict
         finished_report_keys = list(fws_dict.keys())
@@ -60,10 +64,13 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
         # if there were ANY failures
         if 'FAIL' in fws_dict[key].status:
             status_color = 'red'
+            status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
         elif 'SUCC' in fws_dict[key].status:
             status_color = 'green'
+            status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" width=30>'
         else:
             status_color = 'black'
+            status_text = fws_dict[key].status
 
         workspaces_text += '''<big>{project}  /  {workspace} - 
                     <font color={status_color}>{status}</font></big> 
@@ -73,7 +80,7 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
                     '''.format(project = fws_dict[key].project_orig,
                                 workspace = fws_dict[key].workspace_orig,
                                 status_color = status_color,
-                                status = fws_dict[key].status,
+                                status = status_text,
                                 n_wf = str(len(fws_dict[key].tested_workflows)),
                                 report_path = fws_dict[key].report_path)
     
@@ -185,7 +192,6 @@ def test_all(args):
     # generate & open the master report
     master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, ws_dict=fws_testing, verbose=args.verbose)
     os.system('open ' + master_report_path)
-
 
     
 

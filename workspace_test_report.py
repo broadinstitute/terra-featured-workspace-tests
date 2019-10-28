@@ -110,7 +110,6 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
 
 def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
-    TODO: move this function into the Wspace class
     '''
 
     # clone workspace
@@ -126,8 +125,6 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
             time.sleep(sleep_time) # note - TODO to fix: this currently has unintended behavior of waiting to submit the next submission when run in order
         else:
             break_out = True
-    # if verbose:
-    #     print(clone_ws.tested_workflows)
 
     # generate workspace report
     clone_ws.generate_workspace_report(gcs_path, verbose)
