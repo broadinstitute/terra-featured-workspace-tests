@@ -4,9 +4,59 @@ import time
 from datetime import datetime
 from workspace_test_report import clone_workspace
 from get_fws import format_fws
-from gcs_fns import upload_to_gcs
+from gcs_fns import upload_to_gcs, list_blobs
+from ws_class import Wspace
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
+
+def get_fws_dict_from_folder(args):
+
+    # generate a master report from a folder of workspace reports that have already been run
+    report_folder = args.gcs_path + args.test_master_report
+
+    # make sure the folder name is formatted correctly
+    if report_folder[-1] is '/':
+        report_folder = report_folder[:-1]
+    
+    # get list of reports in gcs bucket
+    system_command = "gsutil ls " + report_folder
+    all_paths = os.popen(system_command).read()
+
+    # pull out info
+    fws_dict = {}
+
+    for path in all_paths.split('\n'):
+        ws_name = path.replace('.html','').replace(report_folder+'/','')
+        ws_orig = ''.join(ws_name.split('_')[:-1]) # the original featured workspace name
+        
+        if args.verbose:
+            print(ws_name)
+
+        if len(ws_orig)>0: # in case of empty string
+            system_command = 'gsutil cat ' + path
+            contents = os.popen(system_command).read()
+
+            for line in contents.split('\n'):
+                # get original billing project
+                if 'Billing Project:' in line:
+                    project_orig = line.split('</b>')[-1].replace('</big>','')
+
+                # get workspace test status
+                if 'SUCCESS!' in line:
+                    status = 'SUCCESS!'
+                elif 'FAILURE!' in line:
+                    status = 'FAILURE!'
+            
+            key = project_orig + '/' + ws_orig
+                    
+            fws_dict[key] = Wspace(workspace=ws_name,
+                                    project=args.clone_project,
+                                    workspace_orig=ws_orig,
+                                    project_orig=project_orig,
+                                    status=status,
+                                    report_path=path.replace('gs://','https://storage.googleapis.com/'))
+
+    return fws_dict
 
 
 def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=False):
@@ -22,39 +72,12 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
             print('\nGenerating master report')
 
     # define path for images
-    gcs_path_imgs = gcs_path.replace('gs://','https://storage.cloud.google.com/').replace('fw_reports/','imgs/')
+    # gcs_path_imgs = gcs_path.replace('gs://','https://storage.cloud.google.com/').replace('fw_reports/','imgs/')
+    gcs_path_imgs = gcs_path.replace('gs://','https://storage.googleapis.com/').replace('fw_reports/','imgs/')
+    print(gcs_path_imgs)
 
-    if ws_dict is None:
-        # get list of reports in gcs bucket
-        system_command = "gsutil ls " + gcs_path
-        all_paths = os.popen(system_command).read()
-
-        # get the list of featured workspaces
-        fws_dict = format_fws(get_info=False, verbose=False)
-
-        fws_keys = fws_dict.keys()
-
-        finished_report_keys = []
-        # parse a list of the report names
-        for f in all_paths.split('\n'):
-            if '.html' in f:
-                # kludgy for now, but pull out workspace name and report path from the full bucket path
-                ws_name = f.replace(gcs_path,'')
-                ws_orig = ''.join(ws_name.split('_')[:-1]) # the original featured workspace name
-
-                if len(ws_orig)>0: # in case of empty string
-                    for key in fws_keys:
-                        if ws_orig in key:
-                            print(ws_orig)
-                            finished_report_keys.append(key)
-                            # populate the Wspace class with report_path
-                            fws_dict[key].report_path = f.replace('gs://','https://storage.googleapis.com/')
-                            # put in a status
-                            if fws_dict[key].status is None:
-                                fws_dict[key].status = 'SUCCESS!'
-    else:
-        fws_dict = ws_dict
-        finished_report_keys = list(fws_dict.keys())
+    fws_dict = ws_dict
+    finished_report_keys = list(fws_dict.keys())
 
     # generate text for report
     workspaces_text = ''
@@ -197,7 +220,8 @@ def test_all(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--test_master_report', '-r', action='store_true', help='run master report on Featured Workspaces')
+    # parser.add_argument('--test_master_report', '-r', action='store_true', help='run master report on Featured Workspaces')
+    parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
 
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
@@ -209,8 +233,12 @@ if __name__ == '__main__':
   
 
     
-    if args.test_master_report:
-        report_path = generate_master_report(args.gcs_path, verbose=args.verbose)
+    if args.test_master_report is not None:
+        fws_dict = get_fws_dict_from_folder(args)
+        report_path = generate_master_report(args.gcs_path, 
+                                            clone_time=args.test_master_report.replace('/',''), 
+                                            ws_dict=fws_dict, 
+                                            verbose=args.verbose)
         os.system('open ' + report_path)
     else:
         test_all(args)
