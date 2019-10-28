@@ -51,7 +51,7 @@ class Wspace:
                     entityType = item['rootEntityType']
                 else:
                     entityType = None
-                project_orig = item['namespace']    # original billing project
+                project_orig = item['namespace']    # workflow billing project
                 wf_name = item['name']              # the name of the workflow
 
                 # get and store the name of the data (entity) being used, if any
