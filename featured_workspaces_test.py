@@ -10,7 +10,8 @@ from ws_class import Wspace
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
 
 def get_fws_dict_from_folder(args):
-
+    ''' note this will NOT work except on a mac 
+    '''
     # generate a master report from a folder of workspace reports that have already been run
     report_folder = args.gcs_path + args.test_master_report
 
@@ -95,7 +96,7 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
             status_color = 'black'
             status_text = fws_dict[key].status
 
-        workspaces_text += '''<big>{project}  /  {workspace} - 
+        workspaces_text += '''<big>{project}  /  {workspace} 
                     <font color={status_color}>{status}</font></big> 
                      ({n_wf} workflows tested) 
                     <a href={report_path} target='_blank'>[report]</a>
