@@ -92,8 +92,6 @@ class Submission:
                 for i in res['workflows']:
                     self.message += str(i['messages'])[1:-1]
             else: # should probably never get here, but just in case
-                for i in res['workflows']:
-                    self.final_status = i['status']
                 self.message = 'unrecognized status'
         
         else: # no wf_id or sub_id
