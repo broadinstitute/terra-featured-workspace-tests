@@ -160,7 +160,7 @@ class Wspace:
         failed = False
         # see if any tested workflow didn't succeed
         for wfsub in self.tested_workflows:
-            if wfsub.status != 'Succeeded':
+            if wfsub.final_status != 'Succeeded':
                 failed = True
          
         ## set up the html report

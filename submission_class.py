@@ -16,6 +16,7 @@ class Submission:
     wf_id: str = None   # workflow ID
     sub_id: str = None  # submission ID
     status: str = None  # status of submission 
+    final_status: str = None # final status of submission
     message: str = None # error message
     
     def create_submission(self, verbose=False): 
@@ -72,10 +73,10 @@ class Submission:
         if self.wf_id is not None: # has wf_id and sub_id
             # get info about workflow submission
             res = call_fiss(fapi.get_workflow_metadata, 200, self.project, self.workspace, self.sub_id, self.wf_id)
-            self.status = res['status'] # overwrite status from submission tracking
+            self.final_status = res['status'] # overwrite status from submission tracking
 
             # in case of failure, pull out the error message
-            if self.status == 'Failed':
+            if self.final_status == 'Failed':
                 self.message = ''
                 for failed in res['failures']:
                     for message in failed['causedBy']:
@@ -84,15 +85,15 @@ class Submission:
         elif self.sub_id is not None: # no wf_id but has sub_id
             res = call_fiss(fapi.get_submission, 200, self.project, self.workspace, self.sub_id)
             for i in res['workflows']:
-                self.status = i['status']
-            if self.status == 'Failed':
+                self.final_status = i['status']
+            if self.final_status == 'Failed':
                 # get the error message(s) for why it failed
                 self.message = ''
                 for i in res['workflows']:
                     self.message += str(i['messages'])[1:-1]
             else: # should probably never get here, but just in case
                 for i in res['workflows']:
-                    self.status = i['status']
+                    self.final_status = i['status']
                 self.message = 'unrecognized status'
         
         else: # no wf_id or sub_id
@@ -121,7 +122,7 @@ class Submission:
 
     def get_HTML(self):
         # check status of submission
-        if (self.status == 'Failed') or (self.status == 'Nonstarter'):
+        if (self.final_status == 'Failed') or (self.final_status == 'Nonstarter'):
             status_color = 'red'
             error_message = '<br>Error message: <font color=' + status_color + '>' + str(self.message) + '</font>'
         elif self.status == 'Aborted':
@@ -145,7 +146,7 @@ class Submission:
                             subid = self.sub_id,
                             entity = self.entity_name,
                             status_color = status_color,
-                            status = self.status,
+                            status = self.final_status,
                             error_message = error_message,
                             link = self.get_link())
         
