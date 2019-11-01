@@ -1,6 +1,6 @@
 import os
 import subprocess
-from google.cloud import storage
+# from google.cloud import storage
 
 def upload_to_gcs(local_path, gcs_path, verbose=True):
 
@@ -24,20 +24,20 @@ def upload_to_gcs(local_path, gcs_path, verbose=True):
     return report_path
 
 
-def list_blobs(bucket_name):
-    """Lists all the blobs in the bucket."""
-    storage_client = storage.Client()
+# def list_blobs(bucket_name):
+#     """Lists all the blobs in the bucket."""
+#     storage_client = storage.Client()
 
-    # Note: Client.list_blobs requires at least package version 1.17.0.
-    blobs = storage_client.list_blobs(bucket_name)
+#     # Note: Client.list_blobs requires at least package version 1.17.0.
+#     blobs = storage_client.list_blobs(bucket_name)
 
-    blobs_list = []
-    for blob in blobs:
-        blobs_list.append(blob.name)
+#     blobs_list = []
+#     for blob in blobs:
+#         blobs_list.append(blob.name)
 
-    return blobs_list
+#     return blobs_list
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    bucket_name = 'dsp-fieldeng/fw_reports/2019-10-28-15-36-06'
-    print(list_blobs(bucket_name))
+#     bucket_name = 'dsp-fieldeng/fw_reports/2019-10-28-15-36-06'
+#     print(list_blobs(bucket_name))
