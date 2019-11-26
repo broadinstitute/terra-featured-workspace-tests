@@ -151,7 +151,9 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
 
 def test_all(args):
     # make a folder for this set of tests (folder name is current timestamp)
-    clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
+    if clone_time is None:
+        clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
+
     gcs_path_subfolder = args.gcs_path + clone_time + '/'
 
     # get dict of all Featured Workspaces
@@ -223,6 +225,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('--test_master_report', '-r', action='store_true', help='run master report on Featured Workspaces')
     parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
+    parser.add_argument('--clone_time', '-t', type=str, default=None, help='timestamp in format YYYY-MM-DD-HH-MM-SS (\'%Y-%m-%d-%H-%M-%S\')')
 
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
