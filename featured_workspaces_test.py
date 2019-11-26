@@ -60,7 +60,7 @@ def get_fws_dict_from_folder(args):
     return fws_dict
 
 
-def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=False):
+def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verbose=False):
     ''' generate a report that lists all tested workspaces, the test result,
     and links to each workspace report.
     if ws_dict is passed, will use only the workspaces in the dict, 
@@ -108,10 +108,10 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
                                 n_wf = str(len(fws_dict[key].tested_workflows)),
                                 report_path = fws_dict[key].report_path)
     
-    if clone_time is None:
-        report_name = 'master_report.html'
-    else:
-        report_name = 'master_report_'+clone_time+'.html'
+    # if clone_time is None:
+    #     report_name = 'master_report.html'
+    # else:
+    #     report_name = 'master_report_'+clone_time+'.html'
     local_path = '/tmp/' + report_name
 
     # open, generate, and write the html text for the report
@@ -151,8 +151,12 @@ def generate_master_report(gcs_path, clone_time=None, ws_dict=None, verbose=Fals
 
 def test_all(args):
     # make a folder for this set of tests (folder name is current timestamp)
-    if clone_time is None:
+    if args.report_name is None:
         clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
+        report_name = 'master_report_' + clone_time + '.html'
+    else:
+        report_name = args.report_name
+        clone_time = report_name.replace('master_report_','').replace('.html','')
 
     gcs_path_subfolder = args.gcs_path + clone_time + '/'
 
@@ -216,7 +220,7 @@ def test_all(args):
                 time.sleep(args.sleep_time - (now - start))
 
     # generate & open the master report
-    master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, ws_dict=fws_testing, verbose=args.verbose)
+    master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, report_name=report_name, ws_dict=fws_testing, verbose=args.verbose)
     os.system('open ' + master_report_path)
 
     
@@ -225,7 +229,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
     # parser.add_argument('--test_master_report', '-r', action='store_true', help='run master report on Featured Workspaces')
     parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
-    parser.add_argument('--clone_time', '-t', type=str, default=None, help='timestamp in format YYYY-MM-DD-HH-MM-SS (\'%Y-%m-%d-%H-%M-%S\')')
+    parser.add_argument('--report_name', '-n', type=str, default=None, help='name of master report (ideally with a timestamp)')
 
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
