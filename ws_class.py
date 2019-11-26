@@ -114,7 +114,7 @@ class Wspace:
         # SUBMIT the submissions and check status
         
         # define terminal states
-        terminal_states = set(['Done', 'Aborted', 'Nonstarter'])
+        terminal_states = set(['Done', 'Aborted', 'Submission Failure'])
 
         if len(self.active_submissions) > 0: # only proceed if there are still active submissions to do
             count = 0
@@ -148,7 +148,16 @@ class Wspace:
                 # immediately submit the next submission if there is one
                 self.check_submissions()
 
-    
+    def generate_failed_list(self):
+        ''' generate html for the list of failed workflows in the workspace
+        '''
+        failed_list_html = ''
+        for sub in self.tested_workflows:
+            if sub.final_status is not 'Succeeded':
+                failed_list_html += '<font color=red>'+sub.final_status+'</font>: ' + sub.wf_name + '<br>'
+
+        return failed_list_html
+
     def generate_workspace_report(self, gcs_path, verbose=False):
         ''' generate a failure/success report for each workflow in a workspace, 
         only reporting on the most recent submission for each report.

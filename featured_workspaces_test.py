@@ -89,24 +89,31 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
         if 'FAIL' in fws_dict[key].status:
             status_color = 'red'
             status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
+            # failures_list = 'LIST FAILURES HERE'
+            failures_list = fws_dict[key].generate_failed_list()
         elif 'SUCC' in fws_dict[key].status:
             status_color = 'green'
             status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" width=30>'
+            failures_list = ''
         else:
             status_color = 'black'
             status_text = fws_dict[key].status
+            failures_list = ''
 
         workspaces_text += '''<big>{project}  /  {workspace} 
                     <font color={status_color}>{status}</font></big> 
                      ({n_wf} workflows tested) 
                     <a href={report_path} target='_blank'>[report]</a>
+                    <br>
+                    <blockquote>{failures_list}</blockquote>
                     <br><br>
                     '''.format(project = fws_dict[key].project_orig,
                                 workspace = fws_dict[key].workspace_orig,
                                 status_color = status_color,
                                 status = status_text,
                                 n_wf = str(len(fws_dict[key].tested_workflows)),
-                                report_path = fws_dict[key].report_path)
+                                report_path = fws_dict[key].report_path,
+                                failures_list = failures_list)
     
     # if clone_time is None:
     #     report_name = 'master_report.html'
@@ -157,28 +164,30 @@ def test_all(args):
     else:
         report_name = args.report_name
         clone_time = report_name.replace('master_report_','').replace('.html','')
+        if len(clone_time) == 0: # in case the input name was poorly formatted
+            clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
 
     gcs_path_subfolder = args.gcs_path + clone_time + '/'
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False) 
 
-    # # temporary for troubleshooting/testing
+    # temporary for troubleshooting/testing
     # n_test = 1
-    # copy_fws = {}
-    # for key in fws.keys():
-    #     if len(copy_fws) < n_test:
-    #         copy_fws[key] = fws[key]
-    # fws = dict(copy_fws)
-    # print(fws.keys())
+    copy_fws = {}
+    for key in fws.keys():
+        if 'Terra Notebooks Playground' in key:
+        # if len(copy_fws) < n_test:
+            copy_fws[key] = fws[key]
+    fws = dict(copy_fws)
+    print(fws.keys())
 
 
     fws_testing = {}
     # set up to run tests on all of them
     for ws in fws.values():
-        # # FOR NOW (maybe forever): only test on help-gatk billing project workspaces!
-        # if ws.project == 'help-gatk':
-        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, clone_time=clone_time, verbose=args.verbose)
+        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, 
+                                    clone_time=clone_time, share_with=args.share_with, verbose=args.verbose)
         clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
         clone_ws.check_submissions(verbose=False) # start them
         fws_testing[ws.key] = clone_ws
@@ -232,6 +241,7 @@ if __name__ == '__main__':
     parser.add_argument('--report_name', '-n', type=str, default=None, help='name of master report (ideally with a timestamp)')
 
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
+    parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org', help='email address of person or group with which to share cloned workspace')
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
 

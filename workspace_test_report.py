@@ -17,8 +17,9 @@ def get_ws_bucket(project, name):
     return bucket
 
 
-def clone_workspace(original_project, original_name, clone_project, clone_time=None, verbose=False):
+def clone_workspace(original_project, original_name, clone_project, clone_time=None, share_with=None, verbose=False):
     ''' clone a workspace, including everything in the notebooks folder in the google bucket
+    this also shares the workspace with emails/groups listed in share_with
     '''
     
     # define the name of the cloned workspace
@@ -36,6 +37,20 @@ def clone_workspace(original_project, original_name, clone_project, clone_time=N
                             clone_project,
                             clone_name)
     
+    # share cloned workspace with anyone listed in share_with
+    if share_with is not None:
+        acl_updates = [{
+                "email": share_with,
+                "accessLevel": "READER",
+                "canShare": True,
+                "canCompute": False
+            }]
+        call_fiss(fapi.update_workspace_acl, 200, # def update_workspace_acl(namespace, workspace, acl_updates, invite_users_not_found=False)
+                    clone_project,
+                    clone_name,
+                    acl_updates,
+                    True) # set invite_users_not_found=True
+
     # get gs addresses of original & cloned workspace buckets
     original_bucket = get_ws_bucket(original_project, original_name)
     clone_bucket = get_ws_bucket(clone_project, clone_name)
@@ -108,12 +123,12 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, verbose=True):
+def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, share_with=None, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
     '''
 
     # clone workspace
-    clone_ws = clone_workspace(project, workspace, clone_project, verbose=verbose)
+    clone_ws = clone_workspace(project, workspace, clone_project, share_with=share_with, verbose=verbose)
 
     # create and monitor submissions
     clone_ws.create_submissions(verbose=verbose)
@@ -135,7 +150,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, v
 def test_one(args):
     # run the test on a single workspace
     ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.gcs_path, args.sleep_time, args.verbose)
+                                    args.gcs_path, args.sleep_time, args.share_with, args.verbose)
     report_path = ws.report_path
     
     # open the report
@@ -151,6 +166,7 @@ if __name__ == "__main__":
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--original_name', type=str, default='Sequence-Format-Conversion', help='name of workspace to clone')
     parser.add_argument('--original_project', type=str, default='help-gatk', help='project for original workspace')
+    parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org', help='email address of person or group with which to share cloned workspace')
 
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')

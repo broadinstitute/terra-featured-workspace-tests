@@ -33,11 +33,11 @@ class Submission:
                                         self.entity_name, 
                                         self.entity_type)
             if res.status_code in [400, 404]:
-                self.status = 'Nonstarter'
+                self.status = 'Submission Failure'
                 self.message = res.json()['message']
                 if verbose:
                     print('SUBMISSION FAILED (error ' + str(res.status_code) + \
-                        ', status marked Nonstarter) - ' + self.wf_name)
+                        ', status marked Submission Failure) - ' + self.wf_name)
                     print(self.message)
             else:
                 fapi._check_response_code(res, 201)
@@ -95,7 +95,8 @@ class Submission:
                 self.message = 'unrecognized status'
         
         else: # no wf_id or sub_id
-            pass # you should already have the info needed from the submission failure
+            self.final_status = self.status
+            # pass # you should already have the info needed from the submission failure
 
     
     def get_link(self):
@@ -120,7 +121,7 @@ class Submission:
 
     def get_HTML(self):
         # check status of submission
-        if (self.final_status == 'Failed') or (self.final_status == 'Nonstarter'):
+        if (self.final_status == 'Failed') or (self.final_status == 'Submission Failure'):
             status_color = 'red'
             error_message = '<br>Error message: <font color=' + status_color + '>' + str(self.message) + '</font>'
         elif self.status == 'Aborted':
