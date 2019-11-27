@@ -204,8 +204,8 @@ class Wspace:
 
         # generate the time elapsed for the test
         hour_threshold = 2
-        if 'h' in self.test_time: # if it took > 1 hour
-            if int(self.test_time.split('h')[0]) > hour_threshold: # if it took > [hour_threshold] hours
+        if ' h' in self.test_time: # if it took > 1 hour
+            if int(self.test_time.split(' h')[0]) > hour_threshold: # if it took > [hour_threshold] hours
                 time_text = 'Test runtime: <font color=red>'+self.test_time+'</font>'
         else:
             time_text = 'Test runtime: '+self.test_time
