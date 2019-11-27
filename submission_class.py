@@ -25,13 +25,17 @@ class Submission:
         # only run if status is None 
         # create a submission to run for this workflow
         if self.status is None:
-            # TODO incorporate call_fiss function or a similar one that can handle the 400/404 errors with output
-            res = fapi.create_submission(self.project, 
+            # include list of specialcodes to handle the 400/404 errors with output
+            res = call_fiss(fapi.create_submission, 201, 
+                                        self.project, 
                                         self.workspace, 
                                         self.wf_project, 
                                         self.wf_name, 
                                         self.entity_name, 
-                                        self.entity_type)
+                                        self.entity_type,
+                                        specialcodes=[400,404])
+            
+            # because we included specialcodes input, call_fiss returns the un-parsed json
             if res.status_code in [400, 404]:
                 self.status = 'Submission Failed'
                 self.message = res.json()['message']
@@ -40,7 +44,7 @@ class Submission:
                         ', status marked Submission Failed) - ' + self.wf_name)
                     print(self.message)
             else:
-                fapi._check_response_code(res, 201)
+                # fapi._check_response_code(res, 201) # don't need to check, since this will only pass here if the response code = 201
                 res = res.json()
 
                 self.sub_id = res['submissionId']

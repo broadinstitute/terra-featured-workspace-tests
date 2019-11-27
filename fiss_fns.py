@@ -24,17 +24,20 @@ def my_before_sleep(retry_state):
                        [tn.wait_fixed(60)]),
           stop=tn.stop_after_attempt(5),
           before_sleep=my_before_sleep)
-def call_fiss(fapifunc, okcode, *args, **kwargs):
+def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
     ''' call FISS (firecloud api), check for errors, return json response
 
     function inputs:
         fapifunc : fiss api function to call, e.g. `fapi.get_workspace`
         okcode : fiss api response code indicating a successful run
+        specialcodes : optional - LIST of response code(s) for which you don't want to retry
         *args : args to input to api call
         **kwargs : kwargs to input to api call
 
     function returns:
-        response.json() : json response of the api call
+        response.json() : json response of the api call if successful
+        OR
+        response : non-parsed API response if response code in specialcodes
 
     example use:
         output = call_fiss(fapi.get_workspace, 200, 'help-gatk', 'Sequence-Format-Conversion')
@@ -44,10 +47,18 @@ def call_fiss(fapifunc, okcode, *args, **kwargs):
 
     # check for errors; this is copied from _check_response_code in fiss
     if type(okcode) == int:
-        codes = [okcode]
+        # codes = [okcode]
+        if specialcodes is None:
+            codes = [okcode]
+        else:
+            codes = [okcode]+specialcodes
     if response.status_code not in codes:
         print(response.content)
         raise ferrors.FireCloudServerError(response.status_code, response.content)
+    elif specialcodes is not None:
+        if response.status_code in specialcodes:
+            print(response.content)
+            return response
 
     # return the json response if all goes well
     return response.json()
