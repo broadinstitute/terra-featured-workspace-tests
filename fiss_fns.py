@@ -56,9 +56,7 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
         print(response.content)
         raise ferrors.FireCloudServerError(response.status_code, response.content)
     elif specialcodes is not None:
-        if response.status_code in specialcodes:
-            print(response.content)
-            return response
+        return response
 
     # return the json response if all goes well
     return response.json()
