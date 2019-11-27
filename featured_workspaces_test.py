@@ -99,23 +99,21 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
         if 'FAIL' in fws_dict[key].status:
             status_color = 'red'
             status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
-            failures_list = fws_dict[key].generate_failed_list()
+            failures_list = '<br><blockquote>' + fws_dict[key].generate_failed_list() + '</blockquote><br>'
         elif 'SUCC' in fws_dict[key].status:
             status_color = 'green'
             status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" width=30>'
-            failures_list = ''
+            failures_list = '<br><br>'
         else:
             status_color = 'black'
             status_text = fws_dict[key].status
-            failures_list = ''
+            failures_list = '<br><br>'
 
         workspaces_text += '''<big>{project}  /  {workspace} 
                     <font color={status_color}>{status}</font></big> 
                      ({n_wf} workflows tested) 
                     <a href={report_path} target='_blank'>[report]</a>
-                    <br>
-                    <blockquote>{failures_list}</blockquote>
-                    <br><br>
+                    {failures_list}
                     '''.format(project = fws_dict[key].project_orig,
                                 workspace = fws_dict[key].workspace_orig,
                                 status_color = status_color,
