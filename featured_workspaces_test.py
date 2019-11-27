@@ -73,23 +73,29 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
             print('\nGenerating master report')
 
     # define path for images
-    # gcs_path_imgs = gcs_path.replace('gs://','https://storage.cloud.google.com/').replace('fw_reports/','imgs/')
     gcs_path_imgs = gcs_path.replace('gs://','https://storage.googleapis.com/').replace('fw_reports/','imgs/')
-    print(gcs_path_imgs)
 
     fws_dict = ws_dict
-    finished_report_keys = list(fws_dict.keys())
 
+    # list reports in order of failed reports first
+    nameVals = {}
+    fail_count = 0
+    for key in fws_dict.keys():
+        nameVals[key] = fws_dict[key].status
+        if 'FAIL' in fws_dict[key].status:
+            fail_count += 1
+    finished_report_keys = [v[0] for v in (sorted(nameVals.items(), key = lambda kv:(kv[1], kv[0])))]
+    # finished_report_keys = list(fws_dict.keys())
+
+    fail_count_text = '<font color=red>'+str(fail_count)+'</font> Featured Workspaces failed, out of '+str(len(fws_dict))+' tested'
     # generate text for report
     workspaces_text = ''
 
     for key in finished_report_keys:
-
         # if there were ANY failures
         if 'FAIL' in fws_dict[key].status:
             status_color = 'red'
             status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
-            # failures_list = 'LIST FAILURES HERE'
             failures_list = fws_dict[key].generate_failed_list()
         elif 'SUCC' in fws_dict[key].status:
             status_color = 'green'
@@ -115,10 +121,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                                 report_path = fws_dict[key].report_path,
                                 failures_list = failures_list)
     
-    # if clone_time is None:
-    #     report_name = 'master_report.html'
-    # else:
-    #     report_name = 'master_report_'+clone_time+'.html'
+
     local_path = '/tmp/' + report_name
 
     # open, generate, and write the html text for the report
@@ -134,7 +137,8 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     <span style='vertical-align: middle;'>
     Featured Workspace Report: Master list</span></h1></center></div>
   
-    <br><br>
+    <br><center><big>{fail_count_text}</big></center>
+    <br>
     <h2>Workspaces tested:</h2>{workspaces_text}
     </p>
 
@@ -143,7 +147,8 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     </p></body>
     </html>'''
 
-    message = message.format(workspaces_text = workspaces_text,
+    message = message.format(fail_count_text = fail_count_text,
+                            workspaces_text = workspaces_text,
                             clone_time = clone_time,
                             done_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
 
@@ -172,14 +177,20 @@ def test_all(args):
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False) 
 
-    # # temporary for troubleshooting/testing
-    # copy_fws = {}
-    # for key in fws.keys():
-    #     if 'Terra Notebooks Playground' in key:
-    #     # if len(copy_fws) < n_test:
-    #         copy_fws[key] = fws[key]
-    # fws = dict(copy_fws)
-    # print(fws.keys())
+    # temporary for troubleshooting/testing
+    if args.troubleshoot:
+        copy_fws = {}
+        for key in fws.keys():
+            if 'Terra Notebooks Playground' in key: # this fails fast
+                copy_fws[key] = fws[key]
+            elif 'GATKTutorials-Pipelining' in key: # this succeeds fast
+                copy_fws[key] = fws[key]
+            elif 'GATKTutorials-Somatic' in key: # this succeeds fast
+                copy_fws[key] = fws[key]
+            elif 'Introduction-to-TCGA-Dataset' in key: # this fails fast
+                copy_fws[key] = fws[key]
+        fws = dict(copy_fws)
+        print(fws.keys())
 
 
     fws_testing = {}
@@ -244,6 +255,7 @@ if __name__ == '__main__':
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
 
+    parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
