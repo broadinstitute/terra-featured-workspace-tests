@@ -123,6 +123,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                             <th>Status</th>
                             <th>Report link</th>
                             <th>Failed Workflows</th>
+                            <th>Runtime</th>
                         </tr>
                         '''
         for key in finished_report_keys:
@@ -140,6 +141,15 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                 status_text = fws_dict[key].status
                 failures_list = ''
 
+            # generate the time elapsed for the test
+            hour_threshold = 2
+            test_time = fws_dict[key].test_time
+            if 'h' in test_time: # if it took > 1 hour
+                if int(test_time.split('h')[0]) > hour_threshold: # if it took > [hour_threshold] hours
+                    time_text = '<font color=red>'+test_time+'</font>'
+            else:
+                time_text = test_time
+
             workspaces_text += '''
                                 <tr>
                                     <td>{project}</td>
@@ -148,6 +158,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                                     <td><font color={status_color}>{status}</font></td>
                                     <td><a href={report_path} target='_blank'>[open report for details]</a></td>
                                     <td>{failures_list}</td>
+                                    <td>{runtime}</td>
                                 </tr>                        
                         '''.format(project = fws_dict[key].project_orig,
                                     workspace = fws_dict[key].workspace_orig,
@@ -155,7 +166,8 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                                     status = status_text,
                                     n_wf = str(len(fws_dict[key].tested_workflows)),
                                     report_path = fws_dict[key].report_path,
-                                    failures_list = failures_list)
+                                    failures_list = failures_list,
+                                    runtime = time_text)
         workspaces_text += '</table>'
 
     else:
@@ -272,6 +284,7 @@ def test_all(args):
     for ws in fws.values():
         clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, 
                                     clone_time=clone_time, share_with=args.share_with, verbose=args.verbose)
+        clone_ws.start_timer()
         clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
         clone_ws.check_submissions(verbose=False) # start them
         fws_testing[ws.key] = clone_ws
@@ -293,6 +306,7 @@ def test_all(args):
             if clone_ws.status is None:
                 clone_ws.check_submissions()
                 if len(clone_ws.active_submissions) == 0: # if all submissions in this workspace are DONE
+                    clone_ws.stop_timer()
                     # generate workspace report
                     clone_ws.generate_workspace_report(gcs_path_subfolder, args.verbose)
                     count_done += 1

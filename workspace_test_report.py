@@ -132,6 +132,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, s
 
     # create and monitor submissions
     clone_ws.create_submissions(verbose=verbose)
+    clone_ws.start_timer()
 
     break_out = False
     while not break_out:
@@ -139,6 +140,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, s
         if len(clone_ws.active_submissions) > 0: # if there are still active submissions
             time.sleep(sleep_time) # note - TODO to fix: this currently has unintended behavior of waiting to submit the next submission when run in order
         else:
+            clone_ws.stop_timer()
             break_out = True
 
     # generate workspace report
