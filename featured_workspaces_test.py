@@ -90,57 +90,124 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     finished_report_keys = sorted(failed_list)+sorted(succeeded_list)
 
     # generate text for report
-    fail_count_text = '<font color=red>'+str(fail_count)+'</font> Featured Workspaces failed, out of '+str(len(fws_dict))+' tested'
-    
-    workspaces_text = ''
-
-    for key in finished_report_keys:
-        # if there were ANY failures
-        if 'FAIL' in fws_dict[key].status:
-            status_color = 'red'
-            status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
-            failures_list = '<br><blockquote>' + fws_dict[key].generate_failed_list() + '</blockquote><br>'
-        elif 'SUCC' in fws_dict[key].status:
-            status_color = 'green'
-            status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" width=30>'
-            failures_list = '<br><br>'
-        else:
-            status_color = 'black'
-            status_text = fws_dict[key].status
-            failures_list = '<br><br>'
-
-        workspaces_text += '''<big>{project}  /  {workspace} 
-                    <font color={status_color}>{status}</font></big> 
-                     ({n_wf} workflows tested) 
-                    <a href={report_path} target='_blank'>[report]</a>
-                    {failures_list}
-                    '''.format(project = fws_dict[key].project_orig,
-                                workspace = fws_dict[key].workspace_orig,
-                                status_color = status_color,
-                                status = status_text,
-                                n_wf = str(len(fws_dict[key].tested_workflows)),
-                                report_path = fws_dict[key].report_path,
-                                failures_list = failures_list)
+    fail_count_text = '<font color=red>'+str(fail_count)+'</font> failed, out of '+str(len(fws_dict))+' tested'
     
 
-    local_path = '/tmp/' + report_name
+    do_table = True
+    if do_table:
+        table_style_text = '''
+                        <style>
+                        table {
+                        font-family: arial, sans-serif;
+                        border-collapse: collapse;
+                        width: 100%;
+                        }
+                        td, th {
+                        border: 1px solid #dddddd;
+                        text-align: left;
+                        padding: 8px;
+                        }
+                        </style>
+                        '''
 
-    # open, generate, and write the html text for the report
-    f = open(local_path,'w')
+        workspaces_text = '''
+                        <table>
+                        <col width="10%">
+                        <col width="30%">
+                        <col width="5%">
+                        <col width="5%">
+                        <tr>
+                            <th>Project</th>
+                            <th>Featured Workspace</th>
+                            <th># WFs tested</th>
+                            <th>Status</th>
+                            <th>Report link</th>
+                            <th>Failed Workflows</th>
+                        </tr>
+                        '''
+        for key in finished_report_keys:
+            # if there were ANY failures
+            if 'FAIL' in fws_dict[key].status:
+                status_color = 'red'
+                status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" title="sucks to suck!" width=30>'
+                failures_list = fws_dict[key].generate_failed_list()
+            elif 'SUCC' in fws_dict[key].status:
+                status_color = 'green'
+                status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" title="success kid is proud of you!" width=30>'
+                failures_list = ''
+            else:
+                status_color = 'black'
+                status_text = fws_dict[key].status
+                failures_list = ''
+
+            workspaces_text += '''
+                                <tr>
+                                    <td>{project}</td>
+                                    <td><big>{workspace}</big></td>
+                                    <td>{n_wf}</td>
+                                    <td><font color={status_color}>{status}</font></td>
+                                    <td><a href={report_path} target='_blank'>[open report for details]</a></td>
+                                    <td>{failures_list}</td>
+                                </tr>                        
+                        '''.format(project = fws_dict[key].project_orig,
+                                    workspace = fws_dict[key].workspace_orig,
+                                    status_color = status_color,
+                                    status = status_text,
+                                    n_wf = str(len(fws_dict[key].tested_workflows)),
+                                    report_path = fws_dict[key].report_path,
+                                    failures_list = failures_list)
+        workspaces_text += '</table>'
+
+    else:
+        table_style_text = ''
+        workspaces_text = '<h2>Workspaces tested:</h2>'
+
+        for key in finished_report_keys:
+            # if there were ANY failures
+            if 'FAIL' in fws_dict[key].status:
+                status_color = 'red'
+                status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" width=30>'
+                failures_list = '<br><blockquote>' + fws_dict[key].generate_failed_list() + '</blockquote><br>'
+            elif 'SUCC' in fws_dict[key].status:
+                status_color = 'green'
+                status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" width=30>'
+                failures_list = '<br><br>'
+            else:
+                status_color = 'black'
+                status_text = fws_dict[key].status
+                failures_list = '<br><br>'
+
+            workspaces_text += '''<big>{project}  /  {workspace} 
+                        <font color={status_color}>{status}</font></big> 
+                        ({n_wf} workflows tested) 
+                        <a href={report_path} target='_blank'>[report]</a>
+                        {failures_list}
+                        '''.format(project = fws_dict[key].project_orig,
+                                    workspace = fws_dict[key].workspace_orig,
+                                    status_color = status_color,
+                                    status = status_text,
+                                    n_wf = str(len(fws_dict[key].tested_workflows)),
+                                    report_path = fws_dict[key].report_path,
+                                    failures_list = failures_list)
+    
+    
+    
+    
     message = '''<html>
-    <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
+    <head><link rel='stylesheet'>
+    {table_style_text}
     </head>
-    <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+    <body style='font-family:arial, sans-serif; font-size:18px; padding:30; background-color:#FAFBFD'>
     <p>
     <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
     <h1>
     <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
     <span style='vertical-align: middle;'>
     Featured Workspace Report: Master list</span></h1></center></div>
-  
+
     <br><center><big>{fail_count_text}</big></center>
-    <br>
-    <h2>Workspaces tested:</h2>{workspaces_text}
+    <br><br>
+    {workspaces_text}<br>
     </p>
 
     <br><br>Test started: {clone_time}
@@ -148,11 +215,17 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     </p></body>
     </html>'''
 
-    message = message.format(fail_count_text = fail_count_text,
+    message = message.format(table_style_text = table_style_text,
+                            fail_count_text = fail_count_text,
                             workspaces_text = workspaces_text,
                             clone_time = clone_time,
                             done_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
 
+    
+    
+    # open, generate, and write the html text for the report
+    local_path = '/tmp/' + report_name
+    f = open(local_path,'w')
     f.write(message)
     f.close()
 
