@@ -77,18 +77,21 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 
     fws_dict = ws_dict
 
-    # list reports in order of failed reports first
-    nameVals = {}
+    # list reports in alphabetical order, with failed reports first
+    failed_list = []
+    succeeded_list = []
     fail_count = 0
     for key in fws_dict.keys():
-        nameVals[key] = fws_dict[key].status
         if 'FAIL' in fws_dict[key].status:
             fail_count += 1
-    finished_report_keys = [v[0] for v in (sorted(nameVals.items(), key = lambda kv:(kv[1], kv[0])))]
-    # finished_report_keys = list(fws_dict.keys())
+            failed_list.append(key)
+        else:
+            succeeded_list.append(key)
+    finished_report_keys = sorted(failed_list)+sorted(succeeded_list)
 
-    fail_count_text = '<font color=red>'+str(fail_count)+'</font> Featured Workspaces failed, out of '+str(len(fws_dict))+' tested'
     # generate text for report
+    fail_count_text = '<font color=red>'+str(fail_count)+'</font> Featured Workspaces failed, out of '+str(len(fws_dict))+' tested'
+    
     workspaces_text = ''
 
     for key in finished_report_keys:
