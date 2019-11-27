@@ -33,11 +33,11 @@ class Submission:
                                         self.entity_name, 
                                         self.entity_type)
             if res.status_code in [400, 404]:
-                self.status = 'Submission Failure'
+                self.status = 'Submission Failed'
                 self.message = res.json()['message']
                 if verbose:
                     print('SUBMISSION FAILED (error ' + str(res.status_code) + \
-                        ', status marked Submission Failure) - ' + self.wf_name)
+                        ', status marked Submission Failed) - ' + self.wf_name)
                     print(self.message)
             else:
                 fapi._check_response_code(res, 201)
@@ -121,7 +121,7 @@ class Submission:
 
     def get_HTML(self):
         # check status of submission
-        if (self.final_status == 'Failed') or (self.final_status == 'Submission Failure'):
+        if (self.final_status == 'Failed') or (self.final_status == 'Submission Failed'):
             status_color = 'red'
             error_message = '<br>Error message: <font color=' + status_color + '>' + str(self.message) + '</font>'
         elif self.status == 'Aborted':

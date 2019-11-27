@@ -114,7 +114,7 @@ class Wspace:
         # SUBMIT the submissions and check status
         
         # define terminal states
-        terminal_states = set(['Done', 'Aborted', 'Submission Failure'])
+        terminal_states = set(['Done', 'Aborted', 'Submission Failed'])
 
         if len(self.active_submissions) > 0: # only proceed if there are still active submissions to do
             count = 0
@@ -153,7 +153,7 @@ class Wspace:
         '''
         failed_list_html = ''
         for sub in self.tested_workflows:
-            if sub.final_status is not 'Succeeded':
+            if 'Succeeded' not in sub.final_status:
                 failed_list_html += '<font color=red>'+sub.final_status+'</font>: ' + sub.wf_name + '<br>'
 
         return failed_list_html
