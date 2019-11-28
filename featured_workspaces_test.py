@@ -142,13 +142,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
                 failures_list = ''
 
             # generate the time elapsed for the test
-            hour_threshold = 2
-            test_time = fws_dict[key].test_time
-            if ' h' in test_time: # if it took > 1 hour
-                if int(test_time.split(' h')[0]) > hour_threshold: # if it took > [hour_threshold] hours
-                    time_text = '<font color=red>'+test_time+'</font>'
-            else:
-                time_text = test_time
+            time_text = fws_dict[key].test_time
 
             workspaces_text += '''
                                 <tr>

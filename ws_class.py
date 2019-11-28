@@ -1,18 +1,30 @@
 from dataclasses import dataclass, field
 from firecloud import api as fapi
-from datetime import datetime
+from datetime import datetime, timedelta
 from submission_class import Submission
 from gcs_fns import upload_to_gcs
 from fiss_fns import call_fiss
 
-def format_timedelta(timedelta):
-    time_list = str(timedelta).split(':') # time_list[0] is hours, [1] minutes, [2] seconds
-    if int(time_list[0]) > 0: # if it took >=1 hour
-        return time_list[0]+' h, '+time_list[1]+' min'
-    elif int(time_list[1]) > 0: # if it took >=1 min
-        return time_list[1]+' min'
-    else: # if it took seconds
-        return time_list[2].split('.')[0]+' sec' # ugly way to round to seconds
+def format_timedelta(time_delta, hours_thresh):
+    ''' returns HTML '''
+    # check if it took too long, in which case flag to highlight in html
+    is_too_long = True if (time_delta > timedelta(hours=hours_thresh)) else False
+
+    # convert to string, strip off microseconds
+    time_string = str(time_delta).split('.')[0]
+
+    # format html
+    time_html = '<font color=red>'+time_string+'</font>' if is_too_long else time_string
+
+    return time_html
+
+    # time_list = str(timedelta).split(':') # time_list[0] is hours, [1] minutes, [2] seconds
+    # if int(time_list[0]) > 0: # if it took >=1 hour
+    #     return time_list[0]+' h, '+time_list[1]+' min'
+    # elif int(time_list[1]) > 0: # if it took >=1 min
+    #     return time_list[1]+' min'
+    # else: # if it took seconds
+    #     return time_list[2].split('.')[0]+' sec' # ugly way to round to seconds
 
 @dataclass
 class Wspace:
@@ -47,7 +59,7 @@ class Wspace:
         if self.test_time is not None:
             if type(self.test_time) is not str:
                 start_time = self.test_time
-                self.test_time = format_timedelta(datetime.now() - start_time)
+                self.test_time = format_timedelta(datetime.now() - start_time, 2) # 2 hours is threshold for labeling this red
     
     def create_submissions(self, verbose=False):
         project = self.project
@@ -203,13 +215,8 @@ class Wspace:
             status_color = 'green'
 
         # generate the time elapsed for the test
-        hour_threshold = 2
-        if ' h' in self.test_time: # if it took > 1 hour
-            if int(self.test_time.split(' h')[0]) > hour_threshold: # if it took > [hour_threshold] hours
-                time_text = 'Test runtime: <font color=red>'+self.test_time+'</font>'
-        else:
-            time_text = 'Test runtime: '+self.test_time
-
+        time_text = 'Test runtime: '+self.test_time
+            
         # make a list of the workflows
         workflows_list = list(wfsub.wf_name for wfsub in self.tested_workflows) #self.workflows #list(workflow_dict.keys())
 
