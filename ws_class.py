@@ -3,28 +3,7 @@ from firecloud import api as fapi
 from datetime import datetime, timedelta
 from submission_class import Submission
 from gcs_fns import upload_to_gcs
-from fiss_fns import call_fiss
-
-def format_timedelta(time_delta, hours_thresh):
-    ''' returns HTML '''
-    # check if it took too long, in which case flag to highlight in html
-    is_too_long = True if (time_delta > timedelta(hours=hours_thresh)) else False
-
-    # convert to string, strip off microseconds
-    time_string = str(time_delta).split('.')[0]
-
-    # format html
-    time_html = '<font color=red>'+time_string+'</font>' if is_too_long else time_string
-
-    return time_html
-
-    # time_list = str(timedelta).split(':') # time_list[0] is hours, [1] minutes, [2] seconds
-    # if int(time_list[0]) > 0: # if it took >=1 hour
-    #     return time_list[0]+' h, '+time_list[1]+' min'
-    # elif int(time_list[1]) > 0: # if it took >=1 min
-    #     return time_list[1]+' min'
-    # else: # if it took seconds
-    #     return time_list[2].split('.')[0]+' sec' # ugly way to round to seconds
+from fiss_fns import call_fiss, format_timedelta
 
 @dataclass
 class Wspace:
@@ -52,7 +31,7 @@ class Wspace:
         #self.notebooks = list_notebooks(self.project, self.workspace, ipynb_only=True, verbose=False)
 
     def start_timer(self):
-        if self.test_time is None:
+        if self.test_time is None: # only do this once!
             self.test_time = datetime.now()
     
     def stop_timer(self):

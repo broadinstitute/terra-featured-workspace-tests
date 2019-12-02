@@ -1,8 +1,8 @@
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from firecloud import api as fapi
-from fiss_fns import call_fiss
+from fiss_fns import call_fiss, format_timedelta
 
 @dataclass
 class Submission:
@@ -18,6 +18,7 @@ class Submission:
     status: str = None  # status of submission 
     final_status: str = None # final status of submission
     message: str = None # error message
+    runtime: str = '' # runtime for a submission - WIP - defined in get_final_status
     
     def create_submission(self, verbose=False): 
         ''' create a workflow submission using fiss
@@ -79,6 +80,12 @@ class Submission:
             res = call_fiss(fapi.get_workflow_metadata, 200, self.project, self.workspace, self.sub_id, self.wf_id)
             self.final_status = res['status'] # overwrite status from submission tracking
 
+            start_time = res['start']
+            end_time = res['end']
+            terra_time_fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
+            elapsed = datetime.strptime(end_time, terra_time_fmt) - datetime.strptime(start_time, terra_time_fmt)
+            self.runtime = format_timedelta(elapsed, 2) # 2 hours threshold for marking in red
+
             # in case of failure, pull out the error message
             if self.final_status == 'Failed':
                 self.message = ''
@@ -135,12 +142,18 @@ class Submission:
             status_color = 'green'
             error_message = ''
 
+        if self.runtime == '':
+            runtime_text = ''
+        else:
+            runtime_text = '<br>Runtime: '+self.runtime
+
         message_html = '''
         Workflow Id: {wfid}
         <br>Submission Id: {subid}
         <br>Entity Name: {entity}
         <br>Status: <font color={status_color}>{status}</font>
         {error_message}
+        {runtime}
         <br><a href={link} target='_blank'>Click here for more details</a>
         <br><br>
         '''
@@ -151,6 +164,7 @@ class Submission:
                             status_color = status_color,
                             status = self.final_status,
                             error_message = error_message,
+                            runtime = runtime_text,
                             link = self.get_link())
         
         return message_html

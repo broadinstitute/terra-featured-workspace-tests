@@ -4,6 +4,7 @@ import logging
 import tenacity as tn
 from firecloud import api as fapi
 from firecloud import errors as ferrors
+from datetime import timedelta
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,6 +61,20 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
 
     # return the json response if all goes well
     return response.json()
+
+
+def format_timedelta(time_delta, hours_thresh):
+    ''' returns HTML '''
+    # check if it took too long, in which case flag to highlight in html
+    is_too_long = True if (time_delta > timedelta(hours=hours_thresh)) else False
+
+    # convert to string, strip off microseconds
+    time_string = str(time_delta).split('.')[0]
+
+    # format html
+    time_html = '<font color=red>'+time_string+'</font>' if is_too_long else time_string
+
+    return time_html
 
 
 if __name__ == "__main__":
