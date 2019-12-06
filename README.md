@@ -4,6 +4,9 @@ This code is to test that Terra Featured Workspaces are working properly. It gen
 Note: Currently this code tests all workflows within a Featured Workspace, but it does not test notebooks.
 
 ### Quickstart
+Prerequisites: You will need python3 and may need to install some packages if you don't have them already. After installing python3 and pip3, you can import packages needed to run these scripts using `sudo pip3 install dataclasses firecloud tenacity`. Alternately, use a Docker instead.
+
+
 To run a test of **all Featured Workspaces** (everything [here](https://app.terra.bio/#library/showcase)), from the command line, run:
 
     python3 featured_workspaces_test.py -v
