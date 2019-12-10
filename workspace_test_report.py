@@ -123,7 +123,7 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, share_with=None, verbose=True):
+def test_single_ws(workspace, project, clone_project, gcs_path, abort_hr, sleep_time=60, share_with=None, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
     '''
 
@@ -136,7 +136,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, s
 
     break_out = False
     while not break_out:
-        clone_ws.check_submissions(verbose=verbose)
+        clone_ws.check_submissions(abort_hr=abort_hr, verbose=verbose)
         if len(clone_ws.active_submissions) > 0: # if there are still active submissions
             time.sleep(sleep_time) # note - TODO to fix: this currently has unintended behavior of waiting to submit the next submission when run in order
         else:
@@ -152,7 +152,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, sleep_time=60, s
 def test_one(args):
     # run the test on a single workspace
     ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.gcs_path, args.sleep_time, args.share_with, args.verbose)
+                                    args.gcs_path, args.abort_hr, args.sleep_time, args.share_with, args.verbose)
     report_path = ws.report_path
     
     # open the report
@@ -173,6 +173,7 @@ if __name__ == "__main__":
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
+    parser.add_argument('--abort_hr', type=int, default=None, help='# of hours after which to abort submissions (default None). set to None if you do not wish to abort ever.')
 
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
