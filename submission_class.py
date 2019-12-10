@@ -68,7 +68,11 @@ class Submission:
         if verbose:
             print('    ' + datetime.today().strftime('%H:%M') + ' ' + self.status + ' - ' + self.wf_name)
                         
-    
+    def abort_submission(self):
+        ''' abort submission
+        '''
+        res = call_fiss(fapi.abort_submission, 204, self.project, self.workspace, self.sub_id, specialcodes=[404])
+
     def get_final_status(self):
         ''' once a submission is done: update submission with finished status and error messages
         '''

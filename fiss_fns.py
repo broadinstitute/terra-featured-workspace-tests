@@ -18,8 +18,7 @@ def my_before_sleep(retry_state):
         loglevel, 'Retrying %s with %s in %s seconds; attempt #%s ended with: %s',
         retry_state.fn, retry_state.args, str(int(retry_state.next_action.sleep)), retry_state.attempt_number, retry_state.outcome)
 
-@tn.retry(wait=tn.wait_chain(*[tn.wait_fixed(1)] +
-                       [tn.wait_fixed(5)] +
+@tn.retry(wait=tn.wait_chain(*[tn.wait_fixed(5)] +
                        [tn.wait_fixed(10)] +
                        [tn.wait_fixed(30)] +
                        [tn.wait_fixed(60)]),
@@ -45,6 +44,7 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
     '''
     # call the api 
     response = fapifunc(*args, **kwargs) 
+    # print(response.status_code)
 
     # check for errors; this is copied from _check_response_code in fiss
     if type(okcode) == int:

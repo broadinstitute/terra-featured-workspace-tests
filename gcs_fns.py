@@ -2,6 +2,9 @@ import os
 import subprocess
 # from google.cloud import storage
 
+def convert_to_public_url(gs_input):
+    return gs_input.replace('gs://','https://storage.googleapis.com/')
+
 def upload_to_gcs(local_path, gcs_path, verbose=True):
 
     file_name = local_path.split('/')[-1] # this should be the name of the cloned workspace + '.html'
@@ -15,7 +18,7 @@ def upload_to_gcs(local_path, gcs_path, verbose=True):
     os.system(system_command)
 
     # get report path (link to report on google cloud)
-    public_path = gcs_path.replace('gs://','https://storage.googleapis.com/')
+    public_path = convert_to_public_url(gcs_path)
     report_path = public_path + file_name
 
     if verbose:

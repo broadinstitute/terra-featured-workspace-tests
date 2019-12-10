@@ -19,6 +19,8 @@ class Wspace:
     notebooks: list = field(default_factory=lambda: [])
     active_submissions: list = field(default_factory=lambda: [])
     tested_workflows: list = field(default_factory=lambda: [])
+    submissions_cost: str = None # dict of submissions and their costs
+    total_cost: str = None      # total cost of all submissions
     test_time: str = None       # to keep track of how long the test takes
     report_path: str = None
 
@@ -34,6 +36,10 @@ class Wspace:
         if self.test_time is None: # only do this once!
             self.test_time = datetime.now()
     
+    def check_timer(self):
+        elapsed_time = datetime.now() - self.test_time
+        return elapsed_time
+
     def stop_timer(self):
         if self.test_time is not None:
             if type(self.test_time) is not str:
@@ -122,9 +128,13 @@ class Wspace:
             self.active_submissions = submissions_list
 
 
-    def check_submissions(self, verbose=True):
+    def check_submissions(self, abort_hr=None, verbose=True):
         # SUBMIT the submissions and check status
-        
+
+        # check how long this workspace has been going - abort submissions if it's been running for >24 hours
+        if abort_hr is not None:
+            abort_submissions = True if self.check_timer() > timedelta(hours=abort_hr) else False
+
         # define terminal states
         terminal_states = set(['Done', 'Aborted', 'Submission Failed'])
 
@@ -150,7 +160,11 @@ class Wspace:
                         # get final status & error messages; append the full submission as a list item in tested_workflows
                         sub.get_final_status()
                         self.tested_workflows.append(sub)
-            
+
+                # if need to abort (because test is taking too long)
+                elif abort_submissions:
+                    sub.abort_submission()
+
             if verbose:
                 print('    Finished ' + str(count) + ' of ' + str(len(sublist)) + ' workflows in this set of submissions')
 
@@ -221,7 +235,7 @@ class Wspace:
         message = '''<html>
         <head><link href='https://fonts.googleapis.com/css?family=Lato' rel='stylesheet'>
         </head>
-        <body style='font-family:'Lato'; font-size:18px; padding:30; background-color:#FAFBFD'>
+        <body style='font-family:Montserrat,sans-serif; font-size:18px; padding:30; background-color:#FAFBFD'>
         <p>
         <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
         <h1>
