@@ -32,14 +32,13 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=False):
                 tdelta_days = tdelta.days
             except: # if the workspace doesn't contain a datetime string, i.e. it wasn't cloned by us
                 tdelta_days = -1
-            
-            if verbose:
-                print(ws +' is ' + str(tdelta_days)+ ' days old')
 
             # add workspace to the delete list if it's more than [age_days] old and not in our list of exceptions
             if tdelta_days > age_days:
                 if ws not in exceptions:
                     ws_to_delete.add(ws)
+                    if verbose:
+                        print(ws +' is ' + str(tdelta_days)+ ' days old')
 
         if match_str is not None:
             # add workspace to the delete list if it contains the target string (match_str) and not in our list of exceptions
