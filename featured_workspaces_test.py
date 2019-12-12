@@ -8,6 +8,7 @@ from gcs_fns import upload_to_gcs, convert_to_public_url
 from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
+from cleanup_workspaces import cleanup_workspaces
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
 
@@ -492,8 +493,9 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
   
+    # delete any workspaces older than 2 months
+    cleanup_workspaces(args.project, age_days=60, verbose=args.verbose)
 
-    
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)
         report_path = generate_master_report(args.gcs_path, 
