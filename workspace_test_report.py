@@ -17,7 +17,7 @@ def get_ws_bucket(project, name):
     return bucket
 
 
-def clone_workspace(original_project, original_name, clone_project, clone_time=None, share_with=None, verbose=False):
+def clone_workspace(original_project, original_name, clone_project, clone_time=None, share_with=None, call_cache=True, verbose=False):
     ''' clone a workspace, including everything in the notebooks folder in the google bucket
     this also shares the workspace with emails/groups listed in share_with
     '''
@@ -73,6 +73,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_time=N
                         project = clone_project,
                         workspace_orig = original_name,
                         project_orig = original_project,
+                        call_cache = call_cache,
                         notebooks = list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
                             
 
@@ -123,12 +124,12 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def test_single_ws(workspace, project, clone_project, gcs_path, abort_hr, sleep_time=60, share_with=None, verbose=True):
+def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abort_hr, sleep_time=60, share_with=None, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
     '''
 
     # clone workspace
-    clone_ws = clone_workspace(project, workspace, clone_project, share_with=share_with, verbose=verbose)
+    clone_ws = clone_workspace(project, workspace, clone_project, share_with=share_with, call_cache=call_cache, verbose=verbose)
 
     # create and monitor submissions
     clone_ws.create_submissions(verbose=verbose)
@@ -152,7 +153,8 @@ def test_single_ws(workspace, project, clone_project, gcs_path, abort_hr, sleep_
 def test_one(args):
     # run the test on a single workspace
     ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.gcs_path, args.abort_hr, args.sleep_time, args.share_with, args.verbose)
+                                    args.gcs_path, args.call_cache, args.abort_hr, args.sleep_time, 
+                                    args.share_with, args.verbose)
     report_path = ws.report_path
     
     # open the report
@@ -174,6 +176,7 @@ if __name__ == "__main__":
     parser.add_argument('--html_output', type=str, default='workspace_report.html', help='address to create html doc for report')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--abort_hr', type=int, default=None, help='# of hours after which to abort submissions (default None). set to None if you do not wish to abort ever.')
+    parser.add_argument('--call_cache', type=bool, default=True, help='whether to call cache the submissions (default True)')
 
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 

@@ -7,18 +7,19 @@ from fiss_fns import call_fiss, format_timedelta
 @dataclass
 class Submission:
     '''Class for keeping track of info for Terra workflow submissions.'''
-    workspace: str      # workspace name
-    project: str        # workspace project/namespace
-    wf_project : str    # workflow project/namespace
-    wf_name: str        # workflow name
-    entity_name: str    # data entity name
-    entity_type: str    # data entity type
-    wf_id: str = None   # workflow ID
-    sub_id: str = None  # submission ID
-    status: str = None  # status of submission 
-    final_status: str = None # final status of submission
-    message: str = None # error message
-    runtime: str = '' # runtime for a submission - WIP - defined in get_final_status
+    workspace: str              # workspace name
+    project: str                # workspace project/namespace
+    wf_project : str            # workflow project/namespace
+    wf_name: str                # workflow name
+    entity_name: str            # data entity name
+    entity_type: str            # data entity type
+    call_cache: bool = True     # use call cache (default True)
+    wf_id: str = None           # workflow ID
+    sub_id: str = None          # submission ID
+    status: str = None          # status of submission
+    final_status: str = None    # final status of submission
+    message: str = None         # error message
+    runtime: str = ''           # runtime for a submission - WIP - defined in get_final_status
     
     def create_submission(self, verbose=False): 
         ''' create a workflow submission using fiss
@@ -34,7 +35,8 @@ class Submission:
                                         self.wf_name, 
                                         self.entity_name, 
                                         self.entity_type,
-                                        specialcodes=[400,404])
+                                        specialcodes=[400,404],
+                                        use_callcache=self.call_cache)
             
             # because we included specialcodes input, call_fiss returns the un-parsed json
             if res.status_code in [400, 404]:

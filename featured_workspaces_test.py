@@ -251,17 +251,26 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     failed_list = []
     succeeded_list = []
     fail_count = 0
+    call_cached = None
     for key in fws_dict.keys():
         if 'FAIL' in fws_dict[key].status:
             fail_count += 1
             failed_list.append(key)
         else:
             succeeded_list.append(key)
+        if call_cached is None: # only set this once
+            call_cached = fws_dict[key].call_cache
     finished_report_keys = sorted(failed_list)+sorted(succeeded_list)
 
     # generate text for report
     fail_count_text = '<font color=red>'+str(fail_count)+'</font> failed, out of '+str(len(fws_dict))+' tested'
     
+    # generate the call cache setting used for the test
+    if call_cached:
+        call_cache_text = 'Call Caching ON (enabled)'
+    else:
+        call_cache_text = 'Call Caching OFF (disabled)'
+
     table_style_text = '''
                     <style>
                     table {
@@ -344,7 +353,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     <span style='vertical-align: middle;'>
     Featured Workspace Report: Master list</span></h1></center></div>
 
-    <br><center><big>{fail_count_text}</big></center>
+    <br><center><big>{fail_count_text}</big><br>{call_cache_text}</center>
     <br><br>
     {workspaces_text}<br>
     </p>
@@ -356,6 +365,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 
     message = message.format(table_style_text = table_style_text,
                             fail_count_text = fail_count_text,
+                            call_cache_text = call_cache_text,
                             workspaces_text = workspaces_text,
                             clone_time = clone_time,
                             done_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
@@ -412,7 +422,8 @@ def test_all(args):
     # set up to run tests on all of them
     for ws in fws.values():
         clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, 
-                                    clone_time=clone_time, share_with=args.share_with, verbose=args.verbose)
+                                    clone_time=clone_time, share_with=args.share_with, 
+                                    call_cache=args.call_cache, verbose=args.verbose)
         clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
         clone_ws.start_timer() # start a timer for this workspace's submissions
         clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False) # start them
@@ -463,7 +474,7 @@ def test_all(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
-    
+
     parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
     parser.add_argument('--report_name', '-n', type=str, default=None, help='name of master report (ideally with a timestamp)')
 
@@ -474,6 +485,7 @@ if __name__ == '__main__':
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--abort_hr', type=int, default=24, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
+    parser.add_argument('--call_cache', type=bool, default=False, help='whether to call cache the submissions (default False for FW tests)')
     
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')

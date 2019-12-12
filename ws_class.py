@@ -14,6 +14,7 @@ class Wspace:
     project: str                # billing project
     workspace_orig: str = None  # original name of workspace (if cloned)
     project_orig: str = None    # original billing project (if cloned)
+    call_cache: bool = True     # call cache setting - default True
     status: str = None          # status of test
     workflows: list = field(default_factory=lambda: []) # this initializes with an empty list
     notebooks: list = field(default_factory=lambda: [])
@@ -103,7 +104,8 @@ class Wspace:
                                                             wf_project = project_orig,  
                                                             wf_name = wf_name,      
                                                             entity_name = entityName,
-                                                            entity_type = entityType)
+                                                            entity_type = entityType,
+                                                            call_cache = self.call_cache)
 
 
             # check whether workflows are ordered, and structure list of submissions accordingly
@@ -134,6 +136,8 @@ class Wspace:
         # check how long this workspace has been going - abort submissions if it's been running for >24 hours
         if abort_hr is not None:
             abort_submissions = True if self.check_timer() > timedelta(hours=abort_hr) else False
+        else:
+            abort_submissions = False
 
         # define terminal states
         terminal_states = set(['Done', 'Aborted', 'Submission Failed'])
@@ -209,6 +213,12 @@ class Wspace:
 
         # generate the time elapsed for the test
         time_text = 'Test runtime: '+self.test_time
+
+        # generate the call cache setting used for the test
+        if self.call_cache:
+            call_cache_text = 'Call Caching ON (enabled)'
+        else:
+            call_cache_text = 'Call Caching OFF (disabled)'
             
         # make a list of the workflows
         workflows_list = list(wfsub.wf_name for wfsub in self.tested_workflows) #self.workflows #list(workflow_dict.keys())
@@ -250,6 +260,7 @@ class Wspace:
         <br>
         <big><b> Billing Project: </b>{project_orig}</big>
         <br><br>{time_text}
+        <br>{call_cache_text}
         <br><br><big><b> Workflows: </b>{wf_list}</big>
         <br><big><b> Notebooks: </b>{nb_list}</big>
         <br>
@@ -270,6 +281,7 @@ class Wspace:
                                 workspace_orig = self.workspace_orig,
                                 project_orig = self.project_orig,
                                 time_text = time_text,
+                                call_cache_text = call_cache_text,
                                 wf_list = ', '.join(workflows_list),
                                 nb_list = ', '.join(notebooks_list),
                                 wf_text = workflows_text,
