@@ -20,6 +20,7 @@ class Submission:
     final_status: str = None    # final status of submission
     message: str = None         # error message
     runtime: str = ''           # runtime for a submission - WIP - defined in get_final_status
+    cost: int = None            # cost of submission
     
     def create_submission(self, verbose=False): 
         ''' create a workflow submission using fiss
@@ -115,7 +116,16 @@ class Submission:
             self.final_status = self.status
             # pass # you should already have the info needed from the submission failure
 
-    
+    def get_cost(self, verbose=True):
+        sub_json = call_fiss(fapi.get_submission, 200, self.project, self.workspace, self.sub_id, specialcodes=[404])
+        if sub_json.status_code != 404: # 404 means submission not found
+            sub_json = sub_json.json()
+            cost = sub_json['cost']
+            self.cost = cost
+            if verbose:
+                print('    cost '+'${:.2f}'.format(cost))
+        return cost
+
     def get_link(self):
         # create the tracking link - ideally job manager, otherwise point to Terra job history
         if self.wf_id:

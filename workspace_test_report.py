@@ -145,6 +145,8 @@ def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abor
             break_out = True
 
     # generate workspace report
+    # total_cost = clone_ws.get_workspace_run_cost()
+    # print(total_cost)
     clone_ws.generate_workspace_report(gcs_path, verbose)
 
     return clone_ws

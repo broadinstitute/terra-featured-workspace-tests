@@ -178,6 +178,17 @@ class Wspace:
                 # immediately submit the next submission if there is one
                 self.check_submissions()
 
+    def get_workspace_run_cost(self):
+        ''' after tests are run, query for costs
+        '''
+        total_cost = 0
+        for sub in self.tested_workflows:
+            sub_cost = sub.get_cost()
+            total_cost += sub_cost
+        self.total_cost = '${:.2f}'.format(total_cost)
+        return total_cost
+
+    
     def generate_failed_list(self):
         ''' generate html for the list of failed workflows in the workspace
         '''
