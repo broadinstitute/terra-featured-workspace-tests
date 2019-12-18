@@ -493,8 +493,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
   
-    # delete any workspaces older than 2 months
-    cleanup_workspaces(args.clone_project, age_days=60, verbose=args.verbose)
+    # delete any workspaces older than 10 days
+    cleanup_workspaces(args.clone_project, age_days=10, verbose=args.verbose)
 
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)

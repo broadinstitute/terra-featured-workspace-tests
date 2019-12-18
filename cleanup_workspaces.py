@@ -5,7 +5,7 @@ from datetime import datetime
 from firecloud import api as fapi
 from fiss_fns import call_fiss
 
-def cleanup_workspaces(project, match_str=None, age_days=None, verbose=False):
+def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
     
     # hard code any cloned workspaces we do NOT want to delete
     exceptions = []
