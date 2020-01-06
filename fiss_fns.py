@@ -37,7 +37,7 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
     function returns:
         response.json() : json response of the api call if successful
         OR
-        response : non-parsed API response if response code in specialcodes
+        response : non-parsed API response if you submitted specialcodes
 
     example use:
         output = call_fiss(fapi.get_workspace, 200, 'help-gatk', 'Sequence-Format-Conversion')

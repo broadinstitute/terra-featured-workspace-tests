@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from firecloud import api as fapi
 from fiss_fns import call_fiss, format_timedelta
+from fiss_api_addons import get_workflow_metadata_withExclude
 
 @dataclass
 class Submission:
@@ -79,16 +80,15 @@ class Submission:
     def get_final_status(self):
         ''' once a submission is done: update submission with finished status and error messages
         '''
-        # TODO: explicitly limit to submissions that are done
 
         # 3 cases: 1) has wfID & subID; 2) has subID (submission happened but wf failed); 3) has neither (submission failed)
         if self.wf_id is not None: # has wf_id and sub_id
-            # get info about workflow submission
-            res = call_fiss(fapi.get_workflow_metadata, 200, self.project, self.workspace, self.sub_id, self.wf_id)
-            self.final_status = res['status'] # overwrite status from submission tracking
-
-            start_time = res['start']
-            end_time = res['end']
+            # get info about workflow submission - but exclude info about calls & inputs (which can make the json too big and cause an error)
+            res = call_fiss(get_workflow_metadata_withExclude, 200, self.project, self.workspace, self.sub_id, self.wf_id, 'calls', 'inputs')
+            self.final_status = res['status']
+            
+            start_time = res['start'] # overwrite status from submission tracking
+            end_time = res['end'] # overwrite status from submission tracking
             terra_time_fmt = '%Y-%m-%dT%H:%M:%S.%fZ'
             elapsed = datetime.strptime(end_time, terra_time_fmt) - datetime.strptime(start_time, terra_time_fmt)
             self.runtime = format_timedelta(elapsed, 2) # 2 hours threshold for marking in red
