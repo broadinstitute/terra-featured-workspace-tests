@@ -9,6 +9,56 @@ from ws_class import Wspace
 from fiss_fns import call_fiss
 
 
+def get_fws_dict_from_folder(gcs_path, test_master_report, clone_project, verbose=True):
+    ''' note this will NOT work except on a mac 
+    '''
+    # generate a master report from a folder of workspace reports that have already been run
+    report_folder = gcs_path + test_master_report
+
+    # make sure the folder name is formatted correctly
+    if report_folder[-1] is '/':
+        report_folder = report_folder[:-1]
+    
+    # get list of reports in gcs bucket
+    system_command = "gsutil ls " + report_folder
+    all_paths = os.popen(system_command).read()
+
+    # pull out info
+    fws_dict = {}
+
+    for path in all_paths.split('\n'):
+        ws_name = path.replace('.html','').replace(report_folder+'/','')
+        ws_orig = ''.join(ws_name.split('_')[:-1]) # the original featured workspace name
+        
+        if verbose:
+            print(ws_name)
+
+        if len(ws_orig)>0: # in case of empty string
+            system_command = 'gsutil cat ' + path
+            contents = os.popen(system_command).read()
+
+            for line in contents.split('\n'):
+                # get original billing project
+                if 'Billing Project:' in line:
+                    project_orig = line.split('</b>')[-1].replace('</big>','')
+
+                # get workspace test status
+                if 'SUCCESS!' in line:
+                    status = 'SUCCESS!'
+                elif 'FAILURE!' in line:
+                    status = 'FAILURE!'
+            
+            key = project_orig + '/' + ws_orig
+                    
+            fws_dict[key] = Wspace(workspace=ws_name,
+                                    project=clone_project,
+                                    workspace_orig=ws_orig,
+                                    project_orig=project_orig,
+                                    status=status,
+                                    report_path=path.replace('gs://','https://storage.googleapis.com/'))
+
+    return fws_dict
+
 def get_fw_json():
     request_url = 'https://storage.googleapis.com/firecloud-alerts/featured-workspaces.json'
     fws_json = requests.get(request_url).json()
