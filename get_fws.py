@@ -4,7 +4,7 @@ import csv
 import os
 import argparse
 from firecloud import api as fapi
-from workspace_test_report import list_notebooks
+from workspace_test_report import list_notebooks, clone_workspace
 from ws_class import Wspace
 from fiss_fns import call_fiss
 
@@ -92,22 +92,42 @@ def get_fw_tsv(get_info, verbose):
     return fws_file
 
 
+def clone_all_fws():
+    # clone all featured workspaces 
+
+    clone_project = 'update-fw-bucket-paths-backup'
+    clone_string = 'BACKUP'
+
+    featured_ws_dict = format_fws()
+
+    for ws in featured_ws_dict.values():
+        clone_ws = clone_workspace(ws.project, ws.workspace, clone_project, 
+                                            clone_time=clone_string, verbose=True, copy_bucket=True)
+
+
+
+
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--get_info', action='store_true', help='pulls the names of notebooks and workflows')
     parser.add_argument('--output_format', '-of', default='dict', help='formating the output file to tsv or dictionary')
     parser.add_argument('--open_file','-o', action='store_true', help='open the tsv file listing all of the workspaces')
+    parser.add_argument('--clone_all', action='store_true', help='clone all featured workspaces')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
 
-    if args.output_format == 'dict':
-        fws = format_fws(args.get_info, args.verbose)
-    elif args.output_format == 'tsv':
-        fws_file = get_fw_tsv(args.get_info, args.verbose)
-        if args.open_file:
-            os.system('open ' + fws_file)
+    if args.clone_all:
+        clone_all_fws()
     else:
-        print("output string not recognized, set --output_format to 'dict' or 'tsv'")
+        if args.output_format == 'dict':
+            fws = format_fws(args.get_info, args.verbose)
+        elif args.output_format == 'tsv':
+            fws_file = get_fw_tsv(args.get_info, args.verbose)
+            if args.open_file:
+                os.system('open ' + fws_file)
+        else:
+            print("output string not recognized, set --output_format to 'dict' or 'tsv'")

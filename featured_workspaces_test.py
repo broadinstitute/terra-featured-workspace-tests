@@ -9,6 +9,7 @@ from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
 from cleanup_workspaces import cleanup_workspaces
+from get_cost_for_all_tests import get_cost_of_all_tests
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
 
@@ -486,13 +487,16 @@ if __name__ == '__main__':
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--abort_hr', type=int, default=24, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
-    parser.add_argument('--call_cache', type=bool, default=True, help='whether to call cache the submissions (default True for FW tests)')
+    parser.add_argument('--call_cache', type=bool, default=True, help='whether to call cache the submissions (default False for FW tests)')
     
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
   
+    # run the cost analysis on recent tests
+    get_cost_of_all_tests(args.gcs_path, args.clone_project, args.verbose)
+
     # delete any workspaces older than 10 days
     cleanup_workspaces(args.clone_project, age_days=10, verbose=args.verbose)
 
