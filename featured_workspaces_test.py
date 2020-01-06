@@ -268,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org', help='email address of person or group with which to share cloned workspace')
     parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
-    parser.add_argument('--abort_hr', type=int, default=24, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
+    parser.add_argument('--abort_hr', type=int, default=48, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
     parser.add_argument('--call_cache', type=bool, default=True, help='whether to call cache the submissions (default False for FW tests)')
     
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
