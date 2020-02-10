@@ -6,7 +6,9 @@ from firecloud import api as fapi
 from fiss_fns import call_fiss
 
 def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
-    
+    if verbose:
+        print('searching for workspaces to clean up')
+
     # hard code any cloned workspaces we do NOT want to delete
     exceptions = []
     
@@ -18,6 +20,9 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
         ws_name = ws['workspace']['name']
         if ws_project == project:
             ws_all.append(ws_name)
+
+    if verbose:
+        print(str(len(ws_all))+' workspaces found in project '+project)
 
     FMT = '%Y-%m-%d-%H-%M-%S'       # datetime format used in workspace_test_report.py > clone_workspace()
     
@@ -66,4 +71,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cleanup_workspaces(args.project, args.match_str, args.age_days, args.verbose)
+    cleanup_workspaces(args.project, args.match_str, args.age_days, verbose=True)
