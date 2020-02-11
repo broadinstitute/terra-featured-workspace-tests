@@ -1,5 +1,3 @@
-# import requests
-# import json
 import os
 import subprocess
 import ast
@@ -7,8 +5,6 @@ import shutil
 import argparse
 from fiss_fns import call_fiss
 from firecloud import api as fapi
-# from ws_class import Wspace
-# from datetime import datetime
 
 
 def update_notebooks(workspace_name, workspace_project, replace_this, with_this):
@@ -102,13 +98,13 @@ def update_attributes(workspace_name, workspace_project, replace_this, with_this
                 attrs_list.append(fapi._attr_set(attr, value_new))
         elif isinstance(value, bool):
             pass
+        elif value is None:
+            pass
         else: # some other type, hopefully this doesn't exist
             if replace_this in value:
                 print('unknown type of attribute')
                 print('attr: '+attr)
                 print('value: '+value)
-                # value_new = value.replace(replace_this, with_this)
-                # attrs_list.append(fapi._attr_set(attr, value_new))
 
 
     response = fapi.update_workspace_attributes(workspace_project, workspace_name, attrs_list)
