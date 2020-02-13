@@ -130,18 +130,12 @@ def update_entities(workspace_name, workspace_project, replace_this, with_this):
 
 
     for ent in entities:
-        print('ent: ')
-        print(ent)
         ent_name = ent['name']
         ent_type = ent['entityType']
         ent_attrs = ent['attributes']
         attrs_list = []
         for attr in ent_attrs.keys():
             value = ent_attrs[attr]
-            print('attr: ')
-            print(attr)
-            print('value: ')
-            print(value)
             if isinstance(value, str): # if value is just a string
                 if replace_this in value:
                     new_value = value.replace(replace_this, with_this)
@@ -177,9 +171,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # update the workspace attributes
-    # update_attributes(args.workspace_name, args.workspace_project, args.replace_this, args.with_this)
-    # update_notebooks(args.workspace_name, args.workspace_project, args.replace_this, args.with_this)
+    update_attributes(args.workspace_name, args.workspace_project, args.replace_this, args.with_this)
+    update_notebooks(args.workspace_name, args.workspace_project, args.replace_this, args.with_this)
     update_entities(args.workspace_name, args.workspace_project, args.replace_this, args.with_this)
 
-    # {"file-name.bam": "gs://new/path/",
-    # "file-name2.bam": "gs://new/path2"}
