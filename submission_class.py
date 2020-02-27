@@ -43,7 +43,10 @@ class Submission:
             # because we included specialcodes input, call_fiss returns the un-parsed json
             if res.status_code in [400, 404]:
                 self.status = 'Submission Failed'
-                self.message = res.json()['message']
+                try:
+                    self.message = res.json()['message']
+                except:
+                    self.message = 'TEMPORARY FAILURE - this workflow likely uses hardcoded paths, which we cannot currently automate, but a fix is in the works!'
                 if verbose:
                     print('SUBMISSION FAILED (error ' + str(res.status_code) + \
                         ', status marked Submission Failed) - ' + self.wf_name)
