@@ -34,6 +34,10 @@ def clone_workspace(original_project, original_name, clone_project,
         print('\nCloning ' + original_name + ' to ' + clone_name)
 
 
+    # get email address(es) of owner(s) of original workspace
+    response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
+    original_owners = response['owners']
+
     # clone the Featured Workspace & check for errors
     call_fiss(fapi.clone_workspace, 201, original_project,
                             original_name,
@@ -53,8 +57,6 @@ def clone_workspace(original_project, original_name, clone_project,
                     clone_name,
                     acl_updates,
                     True) # set invite_users_not_found=True
-
-    
     
     # optionally copy entire bucket, including notebooks
     # get gs addresses of original & cloned workspace buckets
@@ -83,6 +85,7 @@ def clone_workspace(original_project, original_name, clone_project,
                         project = clone_project,
                         workspace_orig = original_name,
                         project_orig = original_project,
+                        owner_orig = original_owners,
                         call_cache = call_cache,
                         notebooks = list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
                             
@@ -134,9 +137,11 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     return notebooks_list
 
 
-def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abort_hr, sleep_time=60, share_with=None, verbose=True):
+def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abort_hr, sleep_time=60, share_with=None, mute_notifications=True, verbose=True):
     ''' clone, run submissions, and generate report for a single workspace
     '''
+    # determine whether to email notifications of failures
+    send_notifications = ~args.mute_notifications
 
     # clone workspace
     clone_ws = clone_workspace(project, workspace, clone_project, share_with=share_with, call_cache=call_cache, verbose=verbose)
@@ -157,7 +162,7 @@ def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abor
     # generate workspace report
     # total_cost = clone_ws.get_workspace_run_cost()
     # print(total_cost)
-    clone_ws.generate_workspace_report(gcs_path, verbose)
+    clone_ws.generate_workspace_report(gcs_path, send_notifications, verbose)
 
     return clone_ws
 
@@ -166,7 +171,7 @@ def test_one(args):
     # run the test on a single workspace
     ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
                                     args.gcs_path, args.call_cache, args.abort_hr, args.sleep_time, 
-                                    args.share_with, args.verbose)
+                                    args.share_with, args.mute_notifications, args.verbose)
     report_path = ws.report_path
     
     # open the report
@@ -189,6 +194,8 @@ if __name__ == "__main__":
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--abort_hr', type=int, default=None, help='# of hours after which to abort submissions (default None). set to None if you do not wish to abort ever.')
     parser.add_argument('--call_cache', type=bool, default=True, help='whether to call cache the submissions (default True)')
+
+    parser.add_argument('--mute_notifications', '-m', action='store_true', help='do NOT send emails to workspace owners in case of failure (default is do send)')
 
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 

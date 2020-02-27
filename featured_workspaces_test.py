@@ -169,6 +169,9 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 
 
 def test_all(args):
+    # determine whether to email notifications of failures
+    send_notifications = ~args.mute_notifications
+    
     # make a folder for this set of tests (folder name is current timestamp)
     if args.report_name is None:
         clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
@@ -232,7 +235,7 @@ def test_all(args):
                 if len(clone_ws.active_submissions) == 0: # if all submissions in this workspace are DONE
                     clone_ws.stop_timer()
                     # generate workspace report
-                    clone_ws.generate_workspace_report(gcs_path_subfolder, args.verbose)
+                    clone_ws.generate_workspace_report(gcs_path_subfolder, send_notifications, args.verbose)
                     count_done += 1
             else:
                 count_done += 1
@@ -271,6 +274,8 @@ if __name__ == '__main__':
     parser.add_argument('--abort_hr', type=int, default=48, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
     parser.add_argument('--call_cache', type=bool, default=False, help='whether to call cache the submissions (default False for FW tests)')
     
+    parser.add_argument('--mute_notifications', '-m', action='store_true', help='do NOT send emails to workspace owners in case of failure (default is do send)')
+
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 

@@ -14,6 +14,7 @@ class Wspace:
     project: str                # billing project
     workspace_orig: str = None  # original name of workspace (if cloned)
     project_orig: str = None    # original billing project (if cloned)
+    owner_orig: str = None     # list of email addresses of original workspace's owner(s)
     call_cache: bool = True     # call cache setting - default True
     status: str = None          # status of test
     workflows: list = field(default_factory=lambda: []) # this initializes with an empty list
@@ -199,7 +200,7 @@ class Wspace:
 
         return failed_list_html
 
-    def generate_workspace_report(self, gcs_path, verbose=False):
+    def generate_workspace_report(self, gcs_path, send_notifications=False, verbose=False):
         ''' generate a failure/success report for each workflow in a workspace, 
         only reporting on the most recent submission for each report.
         this returns a string html_output that's currently not modified by this function but might be in future!
@@ -306,6 +307,32 @@ class Wspace:
 
         self.report_path = report_path
         self.status = status_text
+
+        print('send_notifications',send_notifications)
+        print('failed',failed)
+        if send_notifications & failed:
+            self.email_notification()
+
+    def email_notification(self):
+        # temporarily send emails for non-help-gatk workspaces to dsp-support@firecloud.org
+        if self.project_orig == 'help-gatk':
+            email_recipients = self.owner_orig
+        else:
+            email_recipients = ['dsp-support@firecloud.org']
+        
+        email_subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
+        email_body = f'''Greetings! 
+
+You are receiving this message because an automated test of the workflow(s) in {self.project_orig}/{self.workspace_orig} failed. 
+
+Please examine the report at {self.report_path} to see what went wrong. 
+
+Contact dsp-support@firecloud.org for more information about the requirements for Featured Workspace workflows.
+
+Best,
+Terra Customer Delivery Team
+        '''
+        print(email_recipients, email_subject, email_body)
 
 
 if __name__ == "__main__":
