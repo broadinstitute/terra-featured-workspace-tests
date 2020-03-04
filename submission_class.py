@@ -29,6 +29,8 @@ class Submission:
         # only run if status is None 
         # create a submission to run for this workflow
         if self.status is None:
+            print(self.entity_name)
+            print(self.entity_type)
             # include list of specialcodes to handle the 400/404 errors with output
             res = call_fiss(fapi.create_submission, 201, 
                                         self.project, 
@@ -46,7 +48,7 @@ class Submission:
                 try:
                     self.message = res.json()['message']
                 except:
-                    self.message = 'TEMPORARY FAILURE - this workflow likely uses hardcoded paths, which we cannot currently automate, but a fix is in the works!'
+                    self.message = 'UNKNOWN FAILURE!'
                 if verbose:
                     print('SUBMISSION FAILED (error ' + str(res.status_code) + \
                         ', status marked Submission Failed) - ' + self.wf_name)

@@ -99,6 +99,10 @@ class Wspace:
                     # print(allEntities)
                     # print(entityName)
 
+                # if there is no entityName, make sure entityType is also None
+                if entityName is None:
+                    entityType = None
+
                 # populate dictionary of inputs for fapi.create_submission
                 submissions_unordered[wf_name] = Submission(workspace = workspace,
                                                             project = project,     
