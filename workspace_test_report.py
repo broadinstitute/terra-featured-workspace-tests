@@ -7,6 +7,15 @@ from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
 
+def run_subprocess(cmd, errorMessage):
+    try:
+        print("running command: " + cmd)
+        return subprocess.check_output(
+            cmd, shell=True, universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        print(errorMessage)
+        print("Exited with " + str(e.returncode) + "-" + e.output)
+        exit(1)
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace
@@ -64,11 +73,13 @@ def clone_workspace(original_project, original_name, clone_project,
     clone_bucket = get_ws_bucket(clone_project, clone_name)
     
     if copy_bucket: # copy everything in the bucket
-        bucket_files = subprocess.check_output(['gsutil', 'ls', 'gs://' + original_bucket + '/'])
+        bucket_files = run_subprocess(['gsutil', 'ls', 'gs://' + original_bucket + '/'], 'Error listing bucket contents')
+        # bucket_files = subprocess.check_output(['gsutil', 'ls', 'gs://' + original_bucket + '/'])
         if len(bucket_files)>0:
             # gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/**', 'gs://' + clone_bucket + '/']
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket, 'gs://' + clone_bucket]
-            bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+            bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
+            # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
             # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
             # if type(bucket_files) == bytes:
             #     bucket_files = bucket_files.decode().split('\n')
@@ -76,7 +87,8 @@ def clone_workspace(original_project, original_name, clone_project,
         if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the notebooks folder isn't empty
             # gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket + '/notebooks', 'gs://' + clone_bucket + '/notebooks']
-            bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+            bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
+            # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
     if verbose:
         print('Notebook files copied:')
         list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
@@ -104,13 +116,15 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
 
     # check if bucket is empty
     gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
-    bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+    bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
+    # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
     
     # if the bucket isn't empty, check for notebook files and copy them
     if len(bucket_files)>0: 
         # list files present in the bucket
         gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
-        bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+        bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
+        # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
         
         # check output produces a string in Py2, Bytes in Py3, so decode if necessary
         if type(bucket_files) == bytes:
