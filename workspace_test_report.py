@@ -6,16 +6,8 @@ from datetime import datetime
 from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
+from gcs_fns import run_subprocess
 
-def run_subprocess(cmd, errorMessage):
-    try:
-        print("running command: " + cmd)
-        return subprocess.check_output(
-            cmd, shell=True, universal_newlines=True)
-    except subprocess.CalledProcessError as e:
-        print(errorMessage)
-        print("Exited with " + str(e.returncode) + "-" + e.output)
-        exit(1)
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace

@@ -1,6 +1,36 @@
 import os
 import subprocess
-# from google.cloud import storage
+import tenacity as tn
+import logging
+
+
+logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def my_before_sleep(retry_state):
+    if retry_state.attempt_number < 1:
+        loglevel = logging.INFO
+    else:
+        loglevel = logging.WARNING
+    logger.log(
+        loglevel, 'Retrying %s with %s in %s seconds; attempt #%s ended with: %s',
+        retry_state.fn, retry_state.args, str(int(retry_state.next_action.sleep)), retry_state.attempt_number, retry_state.outcome)
+
+@tn.retry(wait=tn.wait_chain(*[tn.wait_fixed(5)] +
+                       [tn.wait_fixed(10)] +
+                       [tn.wait_fixed(30)] +
+                       [tn.wait_fixed(60)]),
+          stop=tn.stop_after_attempt(5),
+          before_sleep=my_before_sleep)
+def run_subprocess(cmd, errorMessage):
+    try:
+        print("running command: " + cmd)
+        return subprocess.check_output(
+            cmd, shell=True, universal_newlines=True)
+    except subprocess.CalledProcessError as e:
+        print(errorMessage)
+        print("Exited with " + str(e.returncode) + "-" + e.output)
+        exit(1)
 
 def convert_to_public_url(gs_input):
     return gs_input.replace('gs://','https://storage.googleapis.com/')
@@ -26,21 +56,3 @@ def upload_to_gcs(local_path, gcs_path, verbose=True):
 
     return report_path
 
-
-# def list_blobs(bucket_name):
-#     """Lists all the blobs in the bucket."""
-#     storage_client = storage.Client()
-
-#     # Note: Client.list_blobs requires at least package version 1.17.0.
-#     blobs = storage_client.list_blobs(bucket_name)
-
-#     blobs_list = []
-#     for blob in blobs:
-#         blobs_list.append(blob.name)
-
-#     return blobs_list
-
-# if __name__ == '__main__':
-
-#     bucket_name = 'dsp-fieldeng/fw_reports/2019-10-28-15-36-06'
-#     print(list_blobs(bucket_name))
