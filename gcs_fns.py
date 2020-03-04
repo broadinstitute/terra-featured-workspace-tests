@@ -2,6 +2,7 @@ import os
 import subprocess
 import tenacity as tn
 import logging
+import sys
 
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
