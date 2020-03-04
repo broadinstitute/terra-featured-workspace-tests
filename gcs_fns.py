@@ -24,8 +24,10 @@ def my_before_sleep(retry_state):
           stop=tn.stop_after_attempt(5),
           before_sleep=my_before_sleep)
 def run_subprocess(cmd, errorMessage):
+    if isinstance(cmd, list):
+        cmd = ' '.join(cmd)
     try:
-        print("running command: " + cmd)
+        # print("running command: " + cmd)
         return subprocess.check_output(
             cmd, shell=True, universal_newlines=True)
     except subprocess.CalledProcessError as e:
