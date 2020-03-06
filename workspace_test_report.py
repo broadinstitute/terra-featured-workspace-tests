@@ -18,7 +18,7 @@ def get_ws_bucket(project, name):
     return bucket
 
 
-def clone_workspace(original_project, original_name, clone_project, 
+def clone_workspace(original_project, original_name, clone_project, clone_name=None,
                     clone_time=None, share_with=None, 
                     call_cache=True, verbose=False, 
                     copy_bucket=False):
@@ -27,9 +27,10 @@ def clone_workspace(original_project, original_name, clone_project,
     '''
     
     # define the name of the cloned workspace
-    if clone_time is None:
-        clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
-    clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
+    if clone_name is None:
+        if clone_time is None:
+            clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
+        clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
 
     if verbose:
         print('\nCloning ' + original_name + ' to ' + clone_name)

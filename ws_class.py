@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from submission_class import Submission
 from gcs_fns import upload_to_gcs
 from fiss_fns import call_fiss, format_timedelta
+from send_emails import send_email
 
 @dataclass
 class Wspace:
@@ -318,25 +319,29 @@ class Wspace:
             self.email_notification()
 
     def email_notification(self):
-        # temporarily send emails for non-help-gatk workspaces to dsp-support@firecloud.org
-        if self.project_orig == 'help-gatk':
-            email_recipients = self.owner_orig
-        else:
-            email_recipients = ['dsp-support@firecloud.org']
+        from_email = 'terra-support-sendgrid@broadinstitute.org'
         
-        email_subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
-        email_body = f'''Greetings! 
-
-You are receiving this message because an automated test of the workflow(s) in {self.project_orig}/{self.workspace_orig} failed. 
-
-Please examine the report at {self.report_path} to see what went wrong. 
-
-Contact dsp-support@firecloud.org for more information about the requirements for Featured Workspace workflows.
-
-Best,
+        # temporarily send emails for non-help-gatk workspaces to dsp-support@firecloud.org
+        # if self.project_orig == 'help-gatk':
+        #     email_recipients = self.owner_orig
+        # else:
+        #     email_recipients = ['dsp-support@firecloud.org']
+        email_recipients = ['marymorg@broadinstitute.org']
+        to_emails = ', '.join(email_recipients)
+        
+        subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
+        content = f'''Greetings! <br><br>
+You are receiving this message because an automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. 
+<br><br>
+Please <a href="{self.report_path}">examine the report</a> to see what went wrong. 
+<br><br>
+Contact terra-support@broadinstitute.org for more information about the requirements for Featured Workspace workflows.
+<br><br>
+Best,<br>
 Terra Customer Delivery Team
         '''
-        print(email_recipients, email_subject, email_body)
+        # print(to_emails, subject, content)
+        send_email(from_email, to_emails, subject, content)
 
 
 if __name__ == "__main__":
