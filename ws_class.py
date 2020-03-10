@@ -253,7 +253,7 @@ class Wspace:
                                             html = wfsub.get_HTML())
         
         # generate detail text from notebooks
-        notebooks_text = notebooks_list
+        notebooks_text = '<i>These tests do not currently test notebooks.</i>'
 
         html_output = self.workspace.replace(' ','_') + '.html'
         local_path = '/tmp/' + html_output
