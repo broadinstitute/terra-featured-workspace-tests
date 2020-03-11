@@ -38,6 +38,8 @@ if __name__ == '__main__':
     subject = 'test subject'
     content = 'hello email world'
 
+    print(os.environ.get('SENDGRID_API_KEY'))
+
     response_code = send_email(from_email=from_email, to_emails=to_emails, subject=subject, content=content)
 
     if response_code == 202:
