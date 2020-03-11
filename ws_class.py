@@ -322,20 +322,20 @@ class Wspace:
         from_email = 'terra-support-sendgrid@broadinstitute.org'
         
         # temporarily send emails for non-help-gatk workspaces to dsp-support@firecloud.org
-        # if self.project_orig == 'help-gatk':
-        #     email_recipients = self.owner_orig
-        # else:
-        #     email_recipients = ['dsp-support@firecloud.org']
-        email_recipients = ['marymorg@broadinstitute.org']
+        if self.project_orig == 'help-gatk':
+            email_recipients = self.owner_orig
+        else:
+            email_recipients = ['dsp-support@firecloud.org']
         to_emails = ', '.join(email_recipients)
         
         subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
         content = f'''Greetings! <br><br>
-You are receiving this message because an automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. 
+An automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. You are receiving this message because you are an owner of this workspace. 
 <br><br>
-Please <a href="{self.report_path}">examine the report</a> to see what went wrong. 
+Please <a href="{self.report_path}">examine the report</a> to see what went wrong and save any needed changes. 
 <br><br>
-Contact terra-support@broadinstitute.org for more information about the requirements for Featured Workspace workflows.
+If you need help configuring your Featured Workspace workflows, please <a href="https://support.terra.bio/hc/en-us/articles/360033599791">check out the requirements here</a>. 
+If you still have questions, contact terra-support@broadinstitute.org, or simply reply to this email.
 <br><br>
 Best,<br>
 Terra Customer Delivery Team
