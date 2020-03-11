@@ -1,6 +1,7 @@
 # using SendGrid's Python Library
 # https://github.com/sendgrid/sendgrid-python
 import os
+import argparse
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
@@ -23,14 +24,19 @@ def send_email(from_email, to_emails, subject, content):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='')
 
-    send_to_list = ['your-email-here']
+    parser.add_argument('--from_email', type=str)
+    parser.add_argument('--to_email', type=str)
+    
+    args = parser.parse_args()
 
-    from_email = 'terra-support-sendgrid@broadinstitute.org'
+    send_to_list = [args.to_email]
+    from_email = args.from_email
+
     to_emails = ', '.join(send_to_list)
     subject = 'test subject'
     content = 'hello email world'
-
 
     response_code = send_email(from_email=from_email, to_emails=to_emails, subject=subject, content=content)
 
