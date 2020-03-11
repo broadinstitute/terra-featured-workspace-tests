@@ -157,6 +157,9 @@ class Submission:
         elif self.status == 'Aborted':
             status_color = 'orange'
             error_message = ''
+        elif self.final_status == 'Not tested':
+            status_color = 'orange'
+            error_message = '<br>Note: '+str(self.message)
         else:
             status_color = 'green'
             error_message = ''

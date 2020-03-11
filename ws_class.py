@@ -112,6 +112,12 @@ class Wspace:
                                                             entity_name = entityName,
                                                             entity_type = entityType,
                                                             call_cache = self.call_cache)
+                
+                # if workflow is 'optional', do not run a test
+                if 'optional' in wf_name.lower():
+                    submissions_unordered[wf_name].status = 'Done'
+                    submissions_unordered[wf_name].final_status = 'Not tested'
+                    submissions_unordered[wf_name].message = 'Optional workflow not tested'
 
 
             # check whether workflows are ordered, and structure list of submissions accordingly
@@ -167,8 +173,10 @@ class Wspace:
                 if sub.status in terminal_states:
                     count += 1
                     if sub.wf_name not in (wfsub.wf_name for wfsub in self.tested_workflows):
-                        # get final status & error messages; append the full submission as a list item in tested_workflows
-                        sub.get_final_status()
+                        if sub.final_status is None: # this won't be None if the (optional) workflow is not being tested
+                            # get final status & error messages
+                            sub.get_final_status()
+                        # append the full submission as a list item in tested_workflows
                         self.tested_workflows.append(sub)
 
                 # if need to abort (because test is taking too long)
@@ -216,7 +224,7 @@ class Wspace:
         failed = False
         # see if any tested workflow didn't succeed
         for wfsub in self.tested_workflows:
-            if wfsub.final_status != 'Succeeded':
+            if wfsub.final_status != 'Succeeded' and wfsub.final_status != 'Not tested':
                 failed = True
          
         ## set up the html report
