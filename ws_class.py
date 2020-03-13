@@ -330,7 +330,7 @@ class Wspace:
         from_email = 'terra-support-sendgrid@broadinstitute.org'
         
         # temporarily only send emails for help-gatk workspaces
-        if self.project_orig == 'help-gatk':
+        if self.project_orig == 'help-gatk' or 'marymorg@broadinstitute.org' in self.owner_orig:
             email_recipients = self.owner_orig
         
             to_emails = ', '.join(email_recipients)
