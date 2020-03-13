@@ -38,7 +38,7 @@ if __name__ == '__main__':
     subject = 'test subject'
     content = 'hello email world'
 
-    print(os.environ.get('SENDGRID_API_KEY')[0:10])
+    print(os.environ.get('SENDGRID_API_KEY').split('/')[-1][0:10])
 
     response_code = send_email(from_email=from_email, to_emails=to_emails, subject=subject, content=content)
 
