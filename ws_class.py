@@ -329,15 +329,14 @@ class Wspace:
     def email_notification(self):
         from_email = 'terra-support-sendgrid@broadinstitute.org'
         
-        # temporarily send emails for non-help-gatk workspaces to dsp-support@firecloud.org
+        # temporarily only send emails for help-gatk workspaces
         if self.project_orig == 'help-gatk':
             email_recipients = self.owner_orig
-        else:
-            email_recipients = ['dsp-support@firecloud.org']
-        to_emails = ', '.join(email_recipients)
         
-        subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
-        content = f'''Greetings! <br><br>
+            to_emails = ', '.join(email_recipients)
+            
+            subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
+            content = f'''Greetings! <br><br>
 An automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. You are receiving this message because you are an owner of this workspace. 
 <br><br>
 Please <a href="{self.report_path}">examine the report</a> to see what went wrong and save any needed changes. 
@@ -347,9 +346,10 @@ If you still have questions, contact terra-support@broadinstitute.org, or simply
 <br><br>
 Best,<br>
 Terra Customer Delivery Team
-        '''
-        # print(to_emails, subject, content)
-        send_email(from_email, to_emails, subject, content)
+'''
+
+            # send the email!
+            send_email(from_email, to_emails, subject, content)
 
 
 if __name__ == "__main__":
