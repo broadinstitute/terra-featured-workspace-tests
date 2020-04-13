@@ -170,7 +170,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 
 def test_all(args):
     # determine whether to email notifications of failures
-    send_notifications = ~args.mute_notifications
+    send_notifications = not args.mute_notifications
     
     # make a folder for this set of tests (folder name is current timestamp)
     if args.report_name is None:
@@ -200,7 +200,7 @@ def test_all(args):
             elif 'Introduction-to-TCGA-Dataset' in key: # this fails fast
                 copy_fws[key] = fws[key]
             elif 'Terra_Quickstart_Workspace' in key: # one workflow fails in a few minutes
-                copy_fws[key] = fws[key]
+
         fws = dict(copy_fws)
         print(fws.keys())
 
