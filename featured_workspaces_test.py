@@ -200,7 +200,7 @@ def test_all(args):
             elif 'Introduction-to-TCGA-Dataset' in key: # this fails fast
                 copy_fws[key] = fws[key]
             elif 'Terra_Quickstart_Workspace' in key: # one workflow fails in a few minutes
-
+                copy_fws[key] = fws[key]
         fws = dict(copy_fws)
         print(fws.keys())
 
