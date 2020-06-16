@@ -4,12 +4,9 @@ import time
 from datetime import datetime
 from workspace_test_report import clone_workspace
 from get_fws import format_fws, get_fws_dict_from_folder
-from gcs_fns import upload_to_gcs, convert_to_public_url
-from ws_class import Wspace
-from firecloud import api as fapi
-from fiss_fns import call_fiss
+from gcs_fns import upload_to_gcs
 from cleanup_workspaces import cleanup_workspaces
-from get_cost_for_all_tests import get_cost_of_all_tests
+from get_cost_for_all_tests import get_cost_of_all_tests, get_cost_of_test
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
 
@@ -17,17 +14,17 @@ from get_cost_for_all_tests import get_cost_of_all_tests
 def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verbose=False):
     ''' generate a report that lists all tested workspaces, the test result,
     and links to each workspace report.
-    if ws_dict is passed, will use only the workspaces in the dict, 
+    if ws_dict is passed, will use only the workspaces in the dict,
     otherwise will return a report for all reports in the google bucket
     '''
     if verbose:
         if ws_dict is None:
-            print('\nGenerating master report from '+gcs_path)
+            print('\nGenerating master report from ' + gcs_path)
         else:
             print('\nGenerating master report')
 
     # define path for images
-    gcs_path_imgs = gcs_path.replace('gs://','https://storage.googleapis.com/').replace('fw_reports/','imgs/')
+    gcs_path_imgs = gcs_path.replace('gs://', 'https://storage.googleapis.com/').replace('fw_reports/', 'imgs/')
 
     fws_dict = ws_dict
 
@@ -42,13 +39,13 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
             failed_list.append(key)
         else:
             succeeded_list.append(key)
-        if call_cached is None: # only set this once
+        if call_cached is None:  # only set this once
             call_cached = fws_dict[key].call_cache
-    finished_report_keys = sorted(failed_list)+sorted(succeeded_list)
+    finished_report_keys = sorted(failed_list) + sorted(succeeded_list)
 
     # generate text for report
-    fail_count_text = '<font color=red>'+str(fail_count)+'</font> failed, out of '+str(len(fws_dict))+' tested'
-    
+    fail_count_text = f'<font color=red>{fail_count}</font> failed, out of {len(fws_dict))} tested'
+
     # generate the call cache setting used for the test
     if call_cached:
         call_cache_text = 'Call Caching ON (enabled)'
@@ -90,11 +87,11 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
         # if there were ANY failures
         if 'FAIL' in fws_dict[key].status:
             status_color = 'red'
-            status_text = '<img src="'+ gcs_path_imgs + 'fail.jpg" alt="FAILURE!" title="sucks to suck!" width=30>'
+            status_text = f'<img src="{gcs_path_imgs}fail.jpg" alt="FAILURE!" title="sucks to suck!" width=30>'
             failures_list = fws_dict[key].generate_failed_list()
         elif 'SUCC' in fws_dict[key].status:
             status_color = 'green'
-            status_text = '<img src="'+ gcs_path_imgs + 'success_kid.png" alt="SUCCESS!" title="success kid is proud of you!" width=30>'
+            status_text = f'<img src="{gcs_path_imgs}success_kid.png" alt="SUCCESS!" title="success kid is proud of you!" width=30>'
             failures_list = ''
         else:
             status_color = 'black'
@@ -105,62 +102,58 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
         time_text = fws_dict[key].test_time
 
         workspaces_text += '''
-                            <tr>
-                                <td>{project}</td>
-                                <td><big>{workspace}</big></td>
-                                <td>{n_wf}</td>
-                                <td><font color={status_color}>{status}</font></td>
-                                <td><a href={report_path} target='_blank'>[open report for details]</a></td>
-                                <td>{failures_list}</td>
-                                <td>{runtime}</td>
-                            </tr>                        
-                    '''.format(project = fws_dict[key].project_orig,
-                                workspace = fws_dict[key].workspace_orig,
-                                status_color = status_color,
-                                status = status_text,
-                                n_wf = str(len(fws_dict[key].tested_workflows)),
-                                report_path = fws_dict[key].report_path,
-                                failures_list = failures_list,
-                                runtime = time_text)
+<tr>
+    <td>{project}</td>
+    <td><big>{workspace}</big></td>
+    <td>{n_wf}</td>
+    <td><font color={status_color}>{status}</font></td>
+    <td><a href={report_path} target='_blank'>[open report for details]</a></td>
+    <td>{failures_list}</td>
+    <td>{runtime}</td>
+</tr>
+                    '''.format(project=fws_dict[key].project_orig,
+                               workspace=fws_dict[key].workspace_orig,
+                               status_color=status_color,
+                               status=status_text,
+                               n_wf=str(len(fws_dict[key].tested_workflows)),
+                               report_path=fws_dict[key].report_path,
+                               failures_list=failures_list,
+                               runtime=time_text)
     workspaces_text += '</table>'
 
-    
     message = '''<html>
-    <head>
-    {table_style_text}
-    </head>
-    <body style='font-family:Montserrat,sans-serif; font-size:18px; padding:30; background-color:#FAFBFD'>
-    <p>
-    <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
-    <h1>
-    <img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
-    <span style='vertical-align: middle;'>
-    Featured Workspace Report: Master list</span></h1></center></div>
+<head>
+{table_style_text}
+</head>
+<body style='font-family:Montserrat,sans-serif; font-size:18px; padding:30; background-color:#FAFBFD'>
+<p>
+<center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
+<h1>
+<img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+<span style='vertical-align: middle;'>
+Featured Workspace Report: Master list</span></h1></center></div>
 
-    <br><center><big>{fail_count_text}</big><br>{call_cache_text}</center>
-    <br><br>
-    {workspaces_text}<br>
-    </p>
+<br><center><big>{fail_count_text}</big><br>{call_cache_text}</center>
+<br><br>
+{workspaces_text}<br>
+</p>
 
-    <br><br>Test started: {clone_time}
-    <br>Test finished: {done_time}
-    </p></body>
-    </html>'''
+<br><br>Test started: {clone_time}
+<br>Test finished: {done_time}
+</p></body>
+</html>'''
 
-    message = message.format(table_style_text = table_style_text,
-                            fail_count_text = fail_count_text,
-                            call_cache_text = call_cache_text,
-                            workspaces_text = workspaces_text,
-                            clone_time = clone_time,
-                            done_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
+    message = message.format(table_style_text=table_style_text,
+                             fail_count_text=fail_count_text,
+                             call_cache_text=call_cache_text,
+                             workspaces_text=workspaces_text,
+                             clone_time=clone_time,
+                             done_time=datetime.today().strftime('%Y-%m-%d-%H-%M-%S'))
 
-    
-    
     # open, generate, and write the html text for the report
     local_path = '/tmp/' + report_name
-    f = open(local_path,'w')
-    f.write(message)
-    f.close()
+    with open(local_path, 'w') as f:
+        f.write(message)
 
     # upload report to google cloud bucket
     report_path = upload_to_gcs(local_path, gcs_path, verbose)
@@ -171,35 +164,35 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 def test_all(args):
     # determine whether to email notifications of failures
     send_notifications = not args.mute_notifications
-    
+
     # make a folder for this set of tests (folder name is current timestamp)
     if args.report_name is None:
         clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
         report_name = 'master_report_' + clone_time + '.html'
     else:
         report_name = args.report_name
-        clone_time = report_name.replace('master_report_','').replace('.html','')
-        if len(clone_time) == 0: # in case the input name was poorly formatted
+        clone_time = report_name.replace('master_report_', '').replace('.html', '')
+        if len(clone_time) == 0:  # in case the input name was poorly formatted
             clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
 
     gcs_path_subfolder = args.gcs_path + clone_time + '/'
 
     # get dict of all Featured Workspaces
-    fws = format_fws(verbose=False) 
+    fws = format_fws(verbose=False)
 
     # temporary for troubleshooting/testing
     if args.troubleshoot:
         copy_fws = {}
         for key in fws.keys():
-            if 'Terra Notebooks Playground' in key: # this fails fast
+            if 'Terra Notebooks Playground' in key:  # this fails fast
                 copy_fws[key] = fws[key]
-            elif 'GATKTutorials-Pipelining' in key: # this succeeds fast
+            elif 'GATKTutorials-Pipelining' in key:  # this succeeds fast
                 copy_fws[key] = fws[key]
-            elif 'GATKTutorials-Somatic' in key: # this succeeds fast
+            elif 'GATKTutorials-Somatic' in key:  # this succeeds fast
                 copy_fws[key] = fws[key]
-            elif 'Introduction-to-TCGA-Dataset' in key: # this fails fast
+            elif 'Introduction-to-TCGA-Dataset' in key:  # this fails fast
                 copy_fws[key] = fws[key]
-            elif 'Terra_Quickstart_Workspace' in key: # one workflow fails in a few minutes
+            elif 'Terra_Quickstart_Workspace' in key:  # one workflow fails in a few minutes
                 copy_fws[key] = fws[key]
         fws = dict(copy_fws)
         print(fws.keys())
