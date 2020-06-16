@@ -204,22 +204,21 @@ def test_all(args):
         fws = dict(copy_fws)
         print(fws.keys())
 
-
     fws_testing = {}
     # set up to run tests on all of them
     for ws in fws.values():
-        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project, 
-                                    clone_time=clone_time, share_with=args.share_with, 
-                                    call_cache=args.call_cache, verbose=args.verbose)
-        clone_ws.create_submissions(verbose=args.verbose) # set up the submissions
-        clone_ws.start_timer() # start a timer for this workspace's submissions
-        clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False) # start them
+        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
+                                   clone_time=clone_time, share_with=args.share_with,
+                                   call_cache=args.call_cache, verbose=args.verbose)
+        clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
+        clone_ws.start_timer()  # start a timer for this workspace's submissions
+        clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
         fws_testing[ws.key] = clone_ws
 
     # monitor submissions
     break_out = False
     while not break_out:
-        start = time.time() # to help not check too often
+        start = time.time()  # to help not check too often
         if args.verbose:
             print('\n' + datetime.today().strftime('%H:%M') + ' status check:')
         count_done = 0
@@ -228,11 +227,11 @@ def test_all(args):
         for clone_ws in fws_testing.values():
             if args.verbose:
                 print('  ' + clone_ws.workspace + ':')
-            
+
             # check status of all submissions
             if clone_ws.status is None:
                 clone_ws.check_submissions(abort_hr=args.abort_hr)
-                if len(clone_ws.active_submissions) == 0: # if all submissions in this workspace are DONE
+                if len(clone_ws.active_submissions) == 0:  # if all submissions in this workspace are DONE
                     clone_ws.stop_timer()
                     # generate workspace report
                     clone_ws.generate_workspace_report(gcs_path_subfolder, send_notifications, args.verbose)
@@ -244,8 +243,8 @@ def test_all(args):
         # track progress
         if args.verbose:
             print('Finished ' + str(count_done) + ' of ' + str(len(fws_testing)) + ' Featured Workspaces to be tested')
-        
-        if count_done == len(fws_testing): # if all the submissions in all workspaces are done 
+
+        if count_done == len(fws_testing):  # if all the submissions in all workspaces are done
             break_out = True
         else:
             # don't continue until at least args.sleep_time seconds have elapsed
@@ -257,7 +256,6 @@ def test_all(args):
     master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, report_name=report_name, ws_dict=fws_testing, verbose=args.verbose)
     os.system('open ' + master_report_path)
 
-    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
@@ -265,7 +263,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
     parser.add_argument('--report_name', '-n', type=str, default=None, help='name of master report (ideally with a timestamp)')
 
-    parser.add_argument('--cost_report', '-c', type=str, default=None, help='name of original master test report to query for cost' )
+    parser.add_argument('--cost_report', '-c', type=str, default=None, help='name of original master test report to query for cost')
 
     parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
     parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org', help='email address of person or group with which to share cloned workspace')
@@ -273,14 +271,14 @@ if __name__ == '__main__':
     parser.add_argument('--gcs_path', type=str, default='gs://dsp-fieldeng/fw_reports/', help='google bucket path to save reports')
     parser.add_argument('--abort_hr', type=int, default=48, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
     parser.add_argument('--call_cache', type=bool, default=False, help='whether to call cache the submissions (default False for FW tests)')
-    
+
     parser.add_argument('--mute_notifications', '-m', action='store_true', help='do NOT send emails to workspace owners in case of failure (default is do send)')
 
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
-  
+
     # run the cost analysis on recent tests
     get_cost_of_all_tests(args.gcs_path, args.clone_project, args.verbose)
 
@@ -289,14 +287,13 @@ if __name__ == '__main__':
 
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)
-        report_path = generate_master_report(args.gcs_path, 
-                                            clone_time=args.test_master_report.replace('/',''), 
-                                            ws_dict=fws_dict, 
-                                            verbose=args.verbose)
+        report_path = generate_master_report(args.gcs_path,
+                                             clone_time=args.test_master_report.replace('/', ''),
+                                             ws_dict=fws_dict,
+                                             verbose=args.verbose)
         os.system('open ' + report_path)
     elif args.cost_report is not None:
         report_path, total_cost = get_cost_of_test(args.gcs_path, args.cost_report, args.clone_project)
         os.system('open ' + report_path)
     else:
         test_all(args)
-    

@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-import subprocess
+
 from datetime import datetime
 from ws_class import Wspace
 from firecloud import api as fapi
@@ -19,87 +19,85 @@ def get_ws_bucket(project, name):
 
 
 def clone_workspace(original_project, original_name, clone_project, clone_name=None,
-                    clone_time=None, share_with=None, 
-                    call_cache=True, verbose=False, 
+                    clone_time=None, share_with=None,
+                    call_cache=True, verbose=False,
                     copy_bucket=False):
     ''' clone a workspace, including everything in the notebooks folder in the google bucket
     this also shares the workspace with emails/groups listed in share_with
     '''
-    
+
     # define the name of the cloned workspace
     if clone_name is None:
         if clone_time is None:
             clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')     # time of clone
-        clone_name = original_name +'_' + clone_time                    # cloned name is the original name + current date/time
+        clone_name = original_name + '_' + clone_time                    # cloned name is the original name + current date/time
 
     if verbose:
         print('\nCloning ' + original_name + ' to ' + clone_name)
-
 
     # get email address(es) of owner(s) of original workspace
     response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
     original_owners = response['owners']
 
     # clone the Featured Workspace & check for errors
-    call_fiss(fapi.clone_workspace, 201, original_project,
-                            original_name,
-                            clone_project,
-                            clone_name)
-    
-    # share cloned workspace with anyone listed in share_with
-    if share_with is not None:
-        acl_updates = [{
-                "email": share_with,
-                "accessLevel": "READER",
-                "canShare": True,
-                "canCompute": False
-            }]
-        call_fiss(fapi.update_workspace_acl, 200, # def update_workspace_acl(namespace, workspace, acl_updates, invite_users_not_found=False)
-                    clone_project,
-                    clone_name,
-                    acl_updates,
-                    True) # set invite_users_not_found=True
-    
+    call_fiss(fapi.clone_workspace,
+              201,
+              original_project,
+              original_name,
+              clone_project,
+              clone_name)
+
+    # share cloned workspace with original owners and anyone listed in share_with
+    if share_with is None:
+        share_with = original_owners
+    else:
+        share_with.extend(original_owners)
+
+    acl_updates = [{
+        "email": share_with,
+        "accessLevel": "READER",
+        "canShare": True,
+        "canCompute": False
+    }]
+    call_fiss(fapi.update_workspace_acl,
+              200,
+              clone_project,
+              clone_name,
+              acl_updates,
+              True)  # set invite_users_not_found=True
+
     # optionally copy entire bucket, including notebooks
     # get gs addresses of original & cloned workspace buckets
     original_bucket = get_ws_bucket(original_project, original_name)
     clone_bucket = get_ws_bucket(clone_project, clone_name)
-    
-    if copy_bucket: # copy everything in the bucket
+
+    if copy_bucket:  # copy everything in the bucket
         bucket_files = run_subprocess(['gsutil', 'ls', 'gs://' + original_bucket + '/'], 'Error listing bucket contents')
-        # bucket_files = subprocess.check_output(['gsutil', 'ls', 'gs://' + original_bucket + '/'])
-        if len(bucket_files)>0:
-            # gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/**', 'gs://' + clone_bucket + '/']
+        if len(bucket_files) > 0:
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket, 'gs://' + clone_bucket]
             bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
-            # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-            # # check output produces a string in Py2, Bytes in Py3, so decode if necessary
-            # if type(bucket_files) == bytes:
-            #     bucket_files = bucket_files.decode().split('\n')
-    else: # only copy notebooks
-        if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0: # if the notebooks folder isn't empty
-            # gsutil_args = ['gsutil', 'cp', 'gs://' + original_bucket + '/notebooks/**', 'gs://' + clone_bucket + '/notebooks/']
+    else:  # only copy notebooks
+        if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0:  # if the notebooks folder isn't empty
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket + '/notebooks', 'gs://' + clone_bucket + '/notebooks']
             bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
-            # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
+
     if verbose:
         print('Notebook files copied:')
         list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
-    clone_ws = Wspace(  workspace = clone_name,
-                        project = clone_project,
-                        workspace_orig = original_name,
-                        project_orig = original_project,
-                        owner_orig = original_owners,
-                        call_cache = call_cache,
-                        notebooks = list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
-                            
+    clone_ws = Wspace(workspace=clone_name,
+                      project=clone_project,
+                      workspace_orig=original_name,
+                      project_orig=original_project,
+                      owner_orig=original_owners,
+                      call_cache=call_cache,
+                      notebooks=list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
 
     return clone_ws
 
 
 def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
-    ''' get a list of everything in the notebooks folder (if ipynb_only = False) 
+    ''' get a list of everything in the notebooks folder (if ipynb_only = False)
     or of only jupyter notebook files (if ipynb_only = True) in the workspace
     '''
     # get the bucket for this workspace
@@ -110,15 +108,13 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     # check if bucket is empty
     gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
     bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
-    # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-    
+
     # if the bucket isn't empty, check for notebook files and copy them
-    if len(bucket_files)>0: 
+    if len(bucket_files) > 0:
         # list files present in the bucket
         gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
         bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
-        # bucket_files = subprocess.check_output(gsutil_args, stderr=subprocess.PIPE)
-        
+
         # check output produces a string in Py2, Bytes in Py3, so decode if necessary
         if type(bucket_files) == bytes:
             bucket_files = bucket_files.decode().split('\n')
@@ -134,13 +130,13 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
             if keyword in f:
                 f = f.split('/')[-1]
                 notebooks_list.append(f)
-    
+
     if verbose:
         if len(notebooks_list) == 0:
             print('Workspace has no notebooks')
-        else: 
+        else:
             print('\n'.join(notebooks_list))
-    
+
     return notebooks_list
 
 
@@ -160,15 +156,13 @@ def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abor
     break_out = False
     while not break_out:
         clone_ws.check_submissions(abort_hr=abort_hr, verbose=verbose)
-        if len(clone_ws.active_submissions) > 0: # if there are still active submissions
-            time.sleep(sleep_time) # note - TODO to fix: this currently has unintended behavior of waiting to submit the next submission when run in order
+        if len(clone_ws.active_submissions) > 0:  # if there are still active submissions
+            time.sleep(sleep_time)
         else:
             clone_ws.stop_timer()
             break_out = True
 
     # generate workspace report
-    # total_cost = clone_ws.get_workspace_run_cost()
-    # print(total_cost)
     clone_ws.generate_workspace_report(gcs_path, send_notifications, verbose)
 
     return clone_ws
@@ -176,15 +170,20 @@ def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abor
 
 def test_one(args):
     # run the test on a single workspace
-    ws = test_single_ws(args.original_name, args.original_project, args.clone_project, 
-                                    args.gcs_path, args.call_cache, args.abort_hr, args.sleep_time, 
-                                    args.share_with, args.mute_notifications, args.verbose)
+    ws = test_single_ws(args.original_name,
+                        args.original_project,
+                        args.clone_project,
+                        args.gcs_path,
+                        args.call_cache,
+                        args.abort_hr,
+                        args.sleep_time,
+                        args.share_with,
+                        args.mute_notifications,
+                        args.verbose)
     report_path = ws.report_path
-    
+
     # open the report
     os.system('open ' + report_path)
-
-
 
 
 if __name__ == "__main__":
@@ -209,6 +208,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     test_one(args)
-    
-    
-    
