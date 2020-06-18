@@ -4,6 +4,7 @@ from fiss_fns import call_fiss
 from gcs_fns import convert_to_public_url, upload_to_gcs
 from firecloud import api as fapi
 
+
 def get_cost_of_test(gcs_path, report_name, clone_project, verbose=True):
     clone_time = report_name.replace('master_report_','').replace('.html','')
     if verbose:
