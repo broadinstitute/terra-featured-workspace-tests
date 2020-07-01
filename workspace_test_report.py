@@ -58,18 +58,20 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
         error_msg = f'Unexpected value for share_with; should be str, list, or None; received {share_with}'
         raise TypeError(error_msg)
 
-    acl_updates = [{
-        "email": share_with,
-        "accessLevel": "READER",
-        "canShare": True,
-        "canCompute": False
-    }]
-    call_fiss(fapi.update_workspace_acl,
-              200,
-              clone_project,
-              clone_name,
-              acl_updates,
-              True)  # set invite_users_not_found=True
+    # need to add each email address separately
+    for email_to_add in share_with:
+        acl_updates = [{
+            "email": email_to_add,
+            "accessLevel": "READER",
+            "canShare": True,
+            "canCompute": False
+        }]
+        call_fiss(fapi.update_workspace_acl,
+                200,
+                clone_project,
+                clone_name,
+                acl_updates,
+                True)  # set invite_users_not_found=True
 
     # optionally copy entire bucket, including notebooks
     # get gs addresses of original & cloned workspace buckets
