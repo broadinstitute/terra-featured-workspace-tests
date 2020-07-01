@@ -344,7 +344,7 @@ class Wspace:
         workspace_key = f'{self.project_orig}/{self.workspace_orig}'
         if workspace_key not in DO_NOT_NOTIFY_LIST:
             # format email
-            email_recipients = ["marymorg@broadinstitute.org"]
+            email_recipients = ["schaluva@broadinstitute.org"]
             # email_recipients = self.owner_orig
 
             to_emails = ', '.join(email_recipients)
