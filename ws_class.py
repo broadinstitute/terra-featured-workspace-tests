@@ -344,8 +344,7 @@ class Wspace:
         workspace_key = f'{self.project_orig}/{self.workspace_orig}'
         if workspace_key not in DO_NOT_NOTIFY_LIST:
             # format email
-            email_recipients = ["schaluva@broadinstitute.org", "marymorg@broadinstitute.org"]
-            # email_recipients = self.owner_orig
+            email_recipients = self.owner_orig
 
             to_emails = ', '.join(email_recipients)
 
@@ -367,8 +366,8 @@ Terra Customer Delivery Team
             send_email(from_email, email_recipients, subject, content)
 
             # share cloned workspace with owners so they can see it
-            # for email_to_add in self.owner_orig:
-            #     self.share_workspace(email_to_add)
+            for email_to_add in self.owner_orig:
+                self.share_workspace(email_to_add)
 
 
 if __name__ == "__main__":
