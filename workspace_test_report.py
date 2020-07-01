@@ -37,7 +37,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
 
     # get email address(es) of owner(s) of original workspace
     response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
-    original_owners = list(response['owners'])
+    original_owners = response['owners']
 
     # clone the Featured Workspace & check for errors
     call_fiss(fapi.clone_workspace,
@@ -50,8 +50,13 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     # share cloned workspace with original owners and anyone listed in share_with
     if share_with is None:
         share_with = original_owners
+    elif isinstance(share_with, str):
+        share_with = list(set([share_with] + original_owners))
+    elif isinstance(share_with, list):
+        share_with = list(set([share_with] + original_owners))
     else:
-        share_with = list(set(list(share_with) + original_owners))
+        error_msg = f'Unexpected value for share_with; should be str, list, or None; received {share_with}'
+        raise TypeError(error_msg)
 
     acl_updates = [{
         "email": share_with,
