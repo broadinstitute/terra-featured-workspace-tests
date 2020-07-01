@@ -37,7 +37,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
 
     # get email address(es) of owner(s) of original workspace
     response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
-    original_owners = response['owners']
+    original_owners = list(response['owners'])
 
     # clone the Featured Workspace & check for errors
     call_fiss(fapi.clone_workspace,
@@ -51,7 +51,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     if share_with is None:
         share_with = original_owners
     else:
-        share_with.extend(original_owners)
+        share_with = list(set(list(share_with) + original_owners))
 
     acl_updates = [{
         "email": share_with,
