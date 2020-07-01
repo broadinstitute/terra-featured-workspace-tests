@@ -44,7 +44,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
     finished_report_keys = sorted(failed_list) + sorted(succeeded_list)
 
     # generate text for report
-    fail_count_text = f'<font color=red>{fail_count}</font> failed, out of {len(fws_dict))} tested'
+    fail_count_text = f'<font color=red>{fail_count}</font> failed, out of {len(fws_dict)} tested'
 
     # generate the call cache setting used for the test
     if call_cached:
