@@ -16,7 +16,7 @@ class Wspace:
     project: str                # billing project
     workspace_orig: str = None  # original name of workspace (if cloned)
     project_orig: str = None    # original billing project (if cloned)
-    owner_orig: str = None     # list of email addresses of original workspace's owner(s)
+    owner_orig: list = field(default_factory=lambda: [])     # list of email addresses of original workspace's owner(s)
     call_cache: bool = True     # call cache setting - default True
     status: str = None          # status of test
     workflows: list = field(default_factory=lambda: [])  # this initializes with an empty list
@@ -49,6 +49,21 @@ class Wspace:
             if type(self.test_time) is not str:
                 start_time = self.test_time
                 self.test_time = format_timedelta(datetime.now() - start_time, 2)  # 2 hours is threshold for labeling this red
+
+    def share_workspace(self, email_to_add):
+        """Share the workspace with the provided email address (VIEWER, canShare, no compute)."""
+        acl_updates = [{
+            "email": email_to_add,
+            "accessLevel": "READER",
+            "canShare": True,
+            "canCompute": False
+        }]
+        call_fiss(fapi.update_workspace_acl,
+                  200,
+                  self.project,
+                  self.workspace,
+                  acl_updates,
+                  False)  # set invite_users_not_found=False
 
     def create_submissions(self, verbose=False):
         project = self.project
@@ -325,9 +340,9 @@ class Wspace:
                               'kco-tech/Cumulus',
                               'amp-t2d-op/2019_ASHG_Reproducible_GWAS-V2']
 
-        # temporarily only send emails for help-gatk workspaces
         workspace_key = f'{self.project_orig}/{self.workspace_orig}'
         if workspace_key not in DO_NOT_NOTIFY_LIST:
+            # format email
             email_recipients = self.owner_orig
 
             to_emails = ', '.join(email_recipients)
@@ -347,6 +362,10 @@ Terra Customer Delivery Team
 
             # send the email!
             send_email(from_email, to_emails, subject, content)
+
+            # share cloned workspace with owners so they can see it
+            for email_to_add in self.owner_orig:
+                self.share_workspace(email_to_add)
 
 
 if __name__ == "__main__":

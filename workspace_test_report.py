@@ -45,33 +45,8 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
               original_project,
               original_name,
               clone_project,
-              clone_name)
-
-    # share cloned workspace with original owners and anyone listed in share_with
-    if share_with is None:
-        share_with = original_owners
-    elif isinstance(share_with, str):
-        share_with = list(set([share_with] + original_owners))
-    elif isinstance(share_with, list):
-        share_with = list(set([share_with] + original_owners))
-    else:
-        error_msg = f'Unexpected value for share_with; should be str, list, or None; received {share_with}'
-        raise TypeError(error_msg)
-
-    # need to add each email address separately
-    for email_to_add in share_with:
-        acl_updates = [{
-            "email": email_to_add,
-            "accessLevel": "READER",
-            "canShare": True,
-            "canCompute": False
-        }]
-        call_fiss(fapi.update_workspace_acl,
-                200,
-                clone_project,
-                clone_name,
-                acl_updates,
-                True)  # set invite_users_not_found=True
+              clone_name,
+              specialcodes=[409])  # 409 = workspace already exists
 
     # optionally copy entire bucket, including notebooks
     # get gs addresses of original & cloned workspace buckets
@@ -99,6 +74,27 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
                       owner_orig=original_owners,
                       call_cache=call_cache,
                       notebooks=list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
+
+    # share cloned workspace with anyone listed in share_with
+    if share_with is not None:
+        if isinstance(share_with, str):
+            share_with = [share_with]
+
+        # need to add each email address separately
+        for email_to_add in share_with:
+            clone_ws.share_workspace(email_to_add)
+            # acl_updates = [{
+            #     "email": email_to_add,
+            #     "accessLevel": "READER",
+            #     "canShare": True,
+            #     "canCompute": False
+            # }]
+            # call_fiss(fapi.update_workspace_acl,
+            #         200,
+            #         clone_project,
+            #         clone_name,
+            #         acl_updates,
+            #         False)  # set invite_users_not_found=False
 
     return clone_ws
 

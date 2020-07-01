@@ -9,6 +9,7 @@ from datetime import timedelta
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def my_before_sleep(retry_state):
     if retry_state.attempt_number < 1:
         loglevel = logging.INFO
@@ -18,10 +19,11 @@ def my_before_sleep(retry_state):
         loglevel, 'Retrying %s with %s in %s seconds; attempt #%s ended with: %s',
         retry_state.fn, retry_state.args, str(int(retry_state.next_action.sleep)), retry_state.attempt_number, retry_state.outcome)
 
+
 @tn.retry(wait=tn.wait_chain(*[tn.wait_fixed(5)] +
-                       [tn.wait_fixed(10)] +
-                       [tn.wait_fixed(30)] +
-                       [tn.wait_fixed(60)]),
+                             [tn.wait_fixed(10)] +
+                             [tn.wait_fixed(30)] +
+                             [tn.wait_fixed(60)]),
           stop=tn.stop_after_attempt(5),
           before_sleep=my_before_sleep)
 def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
@@ -42,9 +44,8 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
     example use:
         output = call_fiss(fapi.get_workspace, 200, 'help-gatk', 'Sequence-Format-Conversion')
     '''
-    # call the api 
-    response = fapifunc(*args, **kwargs) 
-    # print(response.status_code)
+    # call the api
+    response = fapifunc(*args, **kwargs)
 
     # check for errors; this is copied from _check_response_code in fiss
     if type(okcode) == int:
@@ -52,7 +53,7 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
         if specialcodes is None:
             codes = [okcode]
         else:
-            codes = [okcode]+specialcodes
+            codes = [okcode] + specialcodes
     if response.status_code not in codes:
         print(response.content)
         raise ferrors.FireCloudServerError(response.status_code, response.content)
@@ -72,7 +73,7 @@ def format_timedelta(time_delta, hours_thresh):
     time_string = str(time_delta).split('.')[0]
 
     # format html
-    time_html = '<font color=red>'+time_string+'</font>' if is_too_long else time_string
+    time_html = f'<font color=red>{time_string}</font>' if is_too_long else time_string
 
     return time_html
 
