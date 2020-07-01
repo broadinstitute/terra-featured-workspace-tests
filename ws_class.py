@@ -363,7 +363,8 @@ Terra Customer Delivery Team
 '''
 
             # send the email!
-            send_email(from_email, to_emails, subject, content)
+            print(f'Sending email notification to: {to_emails}')
+            send_email(from_email, email_recipients, subject, content)
 
             # share cloned workspace with owners so they can see it
             # for email_to_add in self.owner_orig:
