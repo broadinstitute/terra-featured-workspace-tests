@@ -328,14 +328,6 @@ class Wspace:
         self.report_path = report_path
         self.status = status_text
 
-        print('send_notifications', send_notifications)
-        print('failed', failed)
-        if send_notifications & failed:
-            print('Sending failure notification email')
-            self.email_notification()
-
-    def email_notification(self):
-        from_email = 'terra-support-sendgrid@broadinstitute.org'
         DO_NOT_NOTIFY_LIST = ['help-gatk/Introduction-to-TCGA-Dataset',
                               'help-gatk/Introduction-to-Target-Dataset',
                               'kco-tech/Cumulus',
@@ -343,13 +335,22 @@ class Wspace:
 
         workspace_key = f'{self.project_orig}/{self.workspace_orig}'
         if workspace_key not in DO_NOT_NOTIFY_LIST:
-            # format email
-            email_recipients = self.owner_orig
+            # print('send_notifications', send_notifications)
+            # print('failed', failed)
+            if send_notifications & failed:
+                print('Sending failure notification email')
+                self.email_notification()
 
-            to_emails = ', '.join(email_recipients)
+    def email_notification(self):
+        from_email = 'terra-support-sendgrid@broadinstitute.org'
 
-            subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
-            content = f'''Greetings! <br><br>
+        # format email
+        email_recipients = self.owner_orig
+
+        to_emails = ', '.join(email_recipients)
+
+        subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
+        content = f'''Greetings! <br><br>
 An automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. You are receiving this message because you are an owner of this workspace.
 <br><br>
 Please <a href="{self.report_path}">examine the report</a> to see what went wrong and save any needed changes.
@@ -364,13 +365,13 @@ P.S. You should receive a separate email from Terra with the subject line: "Terr
  {self.project}/{self.workspace} with you" - that's from us, allowing you to check out the error(s) from the automated test.
 '''
 
-            # send the email!
-            print(f'Sending email notification to: {to_emails}')
-            send_email(from_email, email_recipients, subject, content)
+        # send the email!
+        print(f'Sending email notification to: {to_emails}')
+        send_email(from_email, email_recipients, subject, content)
 
-            # share cloned workspace with owners so they can see it
-            for email_to_add in self.owner_orig:
-                self.share_workspace(email_to_add)
+        # share cloned workspace with owners so they can see it
+        for email_to_add in self.owner_orig:
+            self.share_workspace(email_to_add)
 
 
 if __name__ == "__main__":
