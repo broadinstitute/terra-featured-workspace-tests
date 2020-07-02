@@ -7,6 +7,11 @@ from fiss_fns import call_fiss, format_timedelta
 from send_emails import send_email
 
 
+WORKFLOWS_THAT_REQUIRE_MULTIPLE_ENTITIES = ['0_idap_pre_processing_for_analysis',  # terracontest/ TOSC19-idap
+                                            '1_processing-for-variant-discovery-gatk4'  # terracontest/ TOSC19-idap
+                                            ]
+
+
 @dataclass
 class Wspace:
     '''Class for keeping track of info for Terra workspaces.'''
@@ -83,11 +88,18 @@ class Wspace:
             for item in res:  # for each item (workflow)
                 wf_name = item['name']              # the name of the workflow
                 workflow_names.append(wf_name)
+
+                entityType = None
+                expression = None
                 # identify the type of data (entity) being used by this workflow, if any
                 if 'rootEntityType' in item:
                     entityType = item['rootEntityType']
-                else:
-                    entityType = None
+
+                    # if it's a workflow that requires multiple entities, do it
+                    if wf_name in WORKFLOWS_THAT_REQUIRE_MULTIPLE_ENTITIES:
+                        expression = f'this.{entityType}s'
+                        entityType = f'{entityType}_set'
+
                 project_orig = item['namespace']    # workflow billing project
                 wf_name = item['name']              # the name of the workflow
 
@@ -108,6 +120,7 @@ class Wspace:
                         for ent in allEntities:
                             if '_small' in ent:
                                 entityName = ent
+
                     # otherwise just use the first entity
                     if entityName is None:
                         entityName = allEntities[0]  # use the first one
@@ -123,7 +136,10 @@ class Wspace:
                                                             wf_name=wf_name,
                                                             entity_name=entityName,
                                                             entity_type=entityType,
-                                                            call_cache=self.call_cache)
+                                                            call_cache=self.call_cache,
+                                                            expression=expression)
+
+                print(submissions_unordered[wf_name])
 
                 # if workflow is 'optional', do not run a test
                 if 'optional' in wf_name.lower():
