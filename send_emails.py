@@ -6,6 +6,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 def send_email(from_email, to_emails, subject, content):
+    """Note: `to_emails` must be a LIST if there are multiple emails."""
     message = Mail(
         from_email=from_email, 
         to_emails=to_emails, 

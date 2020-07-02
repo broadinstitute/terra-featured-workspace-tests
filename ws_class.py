@@ -7,6 +7,11 @@ from fiss_fns import call_fiss, format_timedelta
 from send_emails import send_email
 
 
+WORKFLOWS_THAT_REQUIRE_MULTIPLE_ENTITIES = ['0_idap_pre_processing_for_analysis',  # terracontest/ TOSC19-idap
+                                            '1_processing-for-variant-discovery-gatk4'  # terracontest/ TOSC19-idap
+                                            ]
+
+
 @dataclass
 class Wspace:
     '''Class for keeping track of info for Terra workspaces.'''
@@ -16,7 +21,7 @@ class Wspace:
     project: str                # billing project
     workspace_orig: str = None  # original name of workspace (if cloned)
     project_orig: str = None    # original billing project (if cloned)
-    owner_orig: str = None     # list of email addresses of original workspace's owner(s)
+    owner_orig: list = field(default_factory=lambda: [])     # list of email addresses of original workspace's owner(s)
     call_cache: bool = True     # call cache setting - default True
     status: str = None          # status of test
     workflows: list = field(default_factory=lambda: [])  # this initializes with an empty list
@@ -50,6 +55,21 @@ class Wspace:
                 start_time = self.test_time
                 self.test_time = format_timedelta(datetime.now() - start_time, 2)  # 2 hours is threshold for labeling this red
 
+    def share_workspace(self, email_to_add):
+        """Share the workspace with the provided email address (VIEWER, canShare, no compute)."""
+        acl_updates = [{
+            "email": email_to_add,
+            "accessLevel": "READER",
+            "canShare": True,
+            "canCompute": False
+        }]
+        call_fiss(fapi.update_workspace_acl,
+                  200,
+                  self.project,
+                  self.workspace,
+                  acl_updates,
+                  False)  # set invite_users_not_found=False
+
     def create_submissions(self, verbose=False):
         project = self.project
         workspace = self.workspace
@@ -68,11 +88,18 @@ class Wspace:
             for item in res:  # for each item (workflow)
                 wf_name = item['name']              # the name of the workflow
                 workflow_names.append(wf_name)
+
+                entityType = None
+                expression = None
                 # identify the type of data (entity) being used by this workflow, if any
                 if 'rootEntityType' in item:
                     entityType = item['rootEntityType']
-                else:
-                    entityType = None
+
+                    # if it's a workflow that requires multiple entities, do it
+                    if wf_name in WORKFLOWS_THAT_REQUIRE_MULTIPLE_ENTITIES:
+                        expression = f'this.{entityType}s'
+                        entityType = f'{entityType}_set'
+
                 project_orig = item['namespace']    # workflow billing project
                 wf_name = item['name']              # the name of the workflow
 
@@ -93,6 +120,7 @@ class Wspace:
                         for ent in allEntities:
                             if '_small' in ent:
                                 entityName = ent
+
                     # otherwise just use the first entity
                     if entityName is None:
                         entityName = allEntities[0]  # use the first one
@@ -108,7 +136,10 @@ class Wspace:
                                                             wf_name=wf_name,
                                                             entity_name=entityName,
                                                             entity_type=entityType,
-                                                            call_cache=self.call_cache)
+                                                            call_cache=self.call_cache,
+                                                            expression=expression)
+
+                print(submissions_unordered[wf_name])
 
                 # if workflow is 'optional', do not run a test
                 if 'optional' in wf_name.lower():
@@ -313,27 +344,29 @@ class Wspace:
         self.report_path = report_path
         self.status = status_text
 
-        print('send_notifications', send_notifications)
-        print('failed', failed)
-        if send_notifications & failed:
-            self.email_notification()
-
-    def email_notification(self):
-        from_email = 'terra-support-sendgrid@broadinstitute.org'
         DO_NOT_NOTIFY_LIST = ['help-gatk/Introduction-to-TCGA-Dataset',
                               'help-gatk/Introduction-to-Target-Dataset',
                               'kco-tech/Cumulus',
                               'amp-t2d-op/2019_ASHG_Reproducible_GWAS-V2']
 
-        # temporarily only send emails for help-gatk workspaces
         workspace_key = f'{self.project_orig}/{self.workspace_orig}'
         if workspace_key not in DO_NOT_NOTIFY_LIST:
-            email_recipients = self.owner_orig
+            # print('send_notifications', send_notifications)
+            # print('failed', failed)
+            if send_notifications & failed:
+                print('Sending failure notification email')
+                self.email_notification()
 
-            to_emails = ', '.join(email_recipients)
+    def email_notification(self):
+        from_email = 'terra-support-sendgrid@broadinstitute.org'
 
-            subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
-            content = f'''Greetings! <br><br>
+        # format email
+        email_recipients = self.owner_orig
+
+        to_emails = ', '.join(email_recipients)
+
+        subject = f'Workflow error(s) in Terra Featured Workspace {self.workspace_orig}'
+        content = f'''Greetings! <br><br>
 An automated test of the workflow(s) in <b>{self.project_orig}/{self.workspace_orig}</b> failed. You are receiving this message because you are an owner of this workspace.
 <br><br>
 Please <a href="{self.report_path}">examine the report</a> to see what went wrong and save any needed changes.
@@ -343,10 +376,18 @@ If you still have questions, contact terra-support@broadinstitute.org, or simply
 <br><br>
 Best,<br>
 Terra Customer Delivery Team
+<br><br>
+P.S. You should receive a separate email from Terra with the subject line: "Terra: None None has shared the workspace:
+ {self.project}/{self.workspace} with you" - that's from us, allowing you to check out the error(s) from the automated test.
 '''
 
-            # send the email!
-            send_email(from_email, to_emails, subject, content)
+        # send the email!
+        print(f'Sending email notification to: {to_emails}')
+        send_email(from_email, email_recipients, subject, content)
+
+        # share cloned workspace with owners so they can see it
+        for email_to_add in self.owner_orig:
+            self.share_workspace(email_to_add)
 
 
 if __name__ == "__main__":

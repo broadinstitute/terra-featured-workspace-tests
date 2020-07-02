@@ -45,26 +45,8 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
               original_project,
               original_name,
               clone_project,
-              clone_name)
-
-    # share cloned workspace with original owners and anyone listed in share_with
-    if share_with is None:
-        share_with = original_owners
-    else:
-        share_with.extend(original_owners)
-
-    acl_updates = [{
-        "email": share_with,
-        "accessLevel": "READER",
-        "canShare": True,
-        "canCompute": False
-    }]
-    call_fiss(fapi.update_workspace_acl,
-              200,
-              clone_project,
               clone_name,
-              acl_updates,
-              True)  # set invite_users_not_found=True
+              specialcodes=[409])  # 409 = workspace already exists
 
     # optionally copy entire bucket, including notebooks
     # get gs addresses of original & cloned workspace buckets
@@ -92,6 +74,15 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
                       owner_orig=original_owners,
                       call_cache=call_cache,
                       notebooks=list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
+
+    # share cloned workspace with anyone listed in share_with
+    if share_with is not None:
+        if isinstance(share_with, str):
+            share_with = [share_with]
+
+        # need to add each email address separately
+        for email_to_add in share_with:
+            clone_ws.share_workspace(email_to_add)
 
     return clone_ws
 
