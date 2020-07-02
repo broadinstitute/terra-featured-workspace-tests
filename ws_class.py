@@ -360,7 +360,7 @@ If you still have questions, contact terra-support@broadinstitute.org, or simply
 <br><br>
 Best,<br>
 Terra Customer Delivery Team
-
+<br><br>
 P.S. You should receive a separate email from Terra with the subject line: "Terra: None None has shared the workspace:
  {self.project}/{self.workspace} with you" - that's from us, allowing you to check out the error(s) from the automated test.
 '''
