@@ -83,18 +83,6 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
         # need to add each email address separately
         for email_to_add in share_with:
             clone_ws.share_workspace(email_to_add)
-            # acl_updates = [{
-            #     "email": email_to_add,
-            #     "accessLevel": "READER",
-            #     "canShare": True,
-            #     "canCompute": False
-            # }]
-            # call_fiss(fapi.update_workspace_acl,
-            #         200,
-            #         clone_project,
-            #         clone_name,
-            #         acl_updates,
-            #         False)  # set invite_users_not_found=False
 
     return clone_ws
 
