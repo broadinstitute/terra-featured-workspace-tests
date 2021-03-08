@@ -25,7 +25,6 @@ class Wspace:
     call_cache: bool = True     # call cache setting - default True
     status: str = None          # status of test
     workflows: list = field(default_factory=lambda: [])  # this initializes with an empty list
-    notebooks: list = field(default_factory=lambda: [])
     active_submissions: list = field(default_factory=lambda: [])
     tested_workflows: list = field(default_factory=lambda: [])
     submissions_cost: str = None  # dict of submissions and their costs
@@ -39,7 +38,6 @@ class Wspace:
                     .format(project=self.project.replace(' ', '%20'),
                             workspace=self.workspace.replace(' ', '%20'))
         self.key = self.project + '/' + self.workspace
-        # self.notebooks = list_notebooks(self.project, self.workspace, ipynb_only=True, verbose=False)
 
     def start_timer(self):
         if self.test_time is None:  # only do this once!

@@ -21,8 +21,8 @@ def get_ws_bucket(project, name):
 def clone_workspace(original_project, original_name, clone_project, clone_name=None,
                     clone_time=None, share_with=None,
                     call_cache=True, verbose=False,
-                    copy_bucket=False):
-    ''' clone a workspace, including everything in the notebooks folder in the google bucket
+                    copy_notebooks=False, copy_bucket=False):
+    ''' clone a workspace, though not bucket files or notebooks unless indicated;
     this also shares the workspace with emails/groups listed in share_with
     '''
 
@@ -58,22 +58,25 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
         if len(bucket_files) > 0:
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket, 'gs://' + clone_bucket]
             bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
-    else:  # only copy notebooks
+    elif copy_notebooks:  # only copy notebooks
         if len(list_notebooks(original_project, original_name, ipynb_only=False, verbose=False)) > 0:  # if the notebooks folder isn't empty
             gsutil_args = ['gsutil', '-m', 'rsync', '-r', 'gs://' + original_bucket + '/notebooks', 'gs://' + clone_bucket + '/notebooks']
             bucket_files = run_subprocess(gsutil_args, 'Error copying over original bucket to clone bucket')
 
-    if verbose:
-        print('Notebook files copied:')
-        list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
+        if verbose:
+            print('Notebook files copied:')
+            # TODO: note that if we ever do want to enable notebooks in these tests, there is
+            # an eventual consistency issue with the SA having permissions to this bucket
+            # immediately after creating the workspace - so this sometimes throws an error,
+            # but only because the SA hasn't gatorcounted enough.
+            list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
     clone_ws = Wspace(workspace=clone_name,
                       project=clone_project,
                       workspace_orig=original_name,
                       project_orig=original_project,
                       owner_orig=original_owners,
-                      call_cache=call_cache,
-                      notebooks=list_notebooks(clone_project, clone_name, ipynb_only=True, verbose=False))
+                      call_cache=call_cache)
 
     # share cloned workspace with anyone listed in share_with
     if share_with is not None:
@@ -95,7 +98,6 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     bucket = get_ws_bucket(project, workspace)
 
     notebooks_list = []
-
     # check if bucket is empty
     gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
     bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
