@@ -65,6 +65,10 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
 
         if verbose:
             print('Notebook files copied:')
+            # TODO: note that if we ever do want to enable notebooks in these tests, there is
+            # an eventual consistency issue with the SA having permissions to this bucket
+            # immediately after creating the workspace - so this sometimes throws an error,
+            # but only because the SA hasn't gatorcounted enough.
             list_notebooks(clone_project, clone_name, ipynb_only=False, verbose=True)
 
     clone_ws = Wspace(workspace=clone_name,
@@ -94,44 +98,39 @@ def list_notebooks(project, workspace, ipynb_only=True, verbose=False):
     bucket = get_ws_bucket(project, workspace)
 
     notebooks_list = []
-    try:
-        # check if bucket is empty
-        gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
+    # check if bucket is empty
+    gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/']
+    bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
+
+    # if the bucket isn't empty, check for notebook files and copy them
+    if len(bucket_files) > 0:
+        # list files present in the bucket
+        gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
         bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
 
-        # if the bucket isn't empty, check for notebook files and copy them
-        if len(bucket_files) > 0:
-            # list files present in the bucket
-            gsutil_args = ['gsutil', 'ls', 'gs://' + bucket + '/**']
-            bucket_files = run_subprocess(gsutil_args, 'Error listing bucket contents')
+        # check output produces a string in Py2, Bytes in Py3, so decode if necessary
+        if type(bucket_files) == bytes:
+            bucket_files = bucket_files.decode().split('\n')
 
-            # check output produces a string in Py2, Bytes in Py3, so decode if necessary
-            if type(bucket_files) == bytes:
-                bucket_files = bucket_files.decode().split('\n')
+        # select which files to list
+        if ipynb_only:
+            keyword = '.ipynb'       # returns only .ipynb files
+        else:
+            keyword = 'notebooks/'   # returns all files in notebooks/ folder
 
-            # select which files to list
-            if ipynb_only:
-                keyword = '.ipynb'       # returns only .ipynb files
-            else:
-                keyword = 'notebooks/'   # returns all files in notebooks/ folder
+        # pull out the notebook names from the full file paths
+        for f in bucket_files:
+            if keyword in f:
+                f = f.split('/')[-1]
+                notebooks_list.append(f)
 
-            # pull out the notebook names from the full file paths
-            for f in bucket_files:
-                if keyword in f:
-                    f = f.split('/')[-1]
-                    notebooks_list.append(f)
+    if verbose:
+        if len(notebooks_list) == 0:
+            print('Workspace has no notebooks')
+        else:
+            print('\n'.join(notebooks_list))
 
-        if verbose:
-            if len(notebooks_list) == 0:
-                print('Workspace has no notebooks')
-            else:
-                print('\n'.join(notebooks_list))
-
-        return notebooks_list
-
-    except Exception as e:
-        print(f'Error listing notebooks: {e}')
-        return []
+    return notebooks_list
 
 
 def test_single_ws(workspace, project, clone_project, gcs_path, call_cache, abort_hr, sleep_time=60, share_with=None, mute_notifications=True, verbose=True):
