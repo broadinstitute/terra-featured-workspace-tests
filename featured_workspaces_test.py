@@ -266,6 +266,7 @@ if __name__ == '__main__':
     parser.add_argument('--call_cache', type=bool, default=False, help='whether to call cache the submissions (default False for FW tests)')
 
     parser.add_argument('--mute_notifications', '-m', action='store_true', help='do NOT send emails to workspace owners in case of failure (default is do send)')
+    parser.add_argument('--skip_cleanup', action='store_true', help='do NOT clean up old workspaces')
 
     parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
@@ -276,8 +277,9 @@ if __name__ == '__main__':
         # run the cost analysis on recent tests
         get_cost_of_all_tests(args.gcs_path, args.clone_project, args.verbose)
 
-        # delete any workspaces older than 20 days
-        cleanup_workspaces(args.clone_project, age_days=20, verbose=args.verbose)
+        if not args.skip_cleanup:
+            # delete any workspaces older than 20 days
+            cleanup_workspaces(args.clone_project, age_days=20, verbose=args.verbose)
 
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)
