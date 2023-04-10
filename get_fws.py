@@ -68,8 +68,12 @@ def get_fw_json():
 def get_cloudPlatform(namespace, name):
     ''' get cloud platform of workspace'''
     request_url = f'https://api.firecloud.org/api/workspaces/{namespace}/{name}?fields=workspace.cloudPlatform'
-    fws_cloudplatform = requests.get(request_url).json()
-
+    fws_response = requests.get(request_url)
+    if fws_response.status_code != 200:
+        print(f'Error retrieving workspace information for workspace {namespace}/{name}')
+        print(fws_response.text)
+        
+    fws_cloudplatform = fws_response.json()
     return fws_cloudplatform['workspace']['cloudPlatform']
 
 def format_fws(get_info=False, verbose=True):
