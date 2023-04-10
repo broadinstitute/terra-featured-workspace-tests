@@ -65,6 +65,12 @@ def get_fw_json():
 
     return fws_json
 
+def get_cloudPlatform(namespace, name):
+    ''' get cloud platform of workspace'''
+    request_url = f'https://api.firecloud.org/api/workspaces/{namespace}/{name}?fields=workspace.cloudPlatform'
+    fws_cloudplatform = requests.get(request_url).json()
+
+    return fws_cloudplatform['workspace']['cloudPlatform']
 
 def format_fws(get_info=False, verbose=True):
     ''' format json file of featured workspaces into dictionary of workspace classes 
@@ -78,6 +84,13 @@ def format_fws(get_info=False, verbose=True):
     for ws in fws_json:
         ws_project = ws['namespace']
         ws_name = ws['name']
+
+        cloudplatform = get_cloudPlatform(ws_project, ws_name)
+
+        if cloudplatform == 'Azure':
+            print(f'Skipping Azure workspace {ws_project}/{ws_name}')
+            continue
+
 
         if verbose:
             print(ws_name + '\t (billing project: ' + ws_project + ')')
