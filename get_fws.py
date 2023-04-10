@@ -7,6 +7,7 @@ from firecloud import api as fapi
 from workspace_test_report import list_notebooks, clone_workspace
 from ws_class import Wspace
 from fiss_fns import call_fiss
+from fiss_api_addons import get_workspace_cloudPlatform
 
 
 def get_fws_dict_from_folder(gcs_path, test_master_report, clone_project, verbose=True):
@@ -67,12 +68,11 @@ def get_fw_json():
 
 def get_cloudPlatform(namespace, name):
     ''' get cloud platform of workspace'''
-    request_url = f'https://api.firecloud.org/api/workspaces/{namespace}/{name}?fields=workspace.cloudPlatform'
-    fws_response = requests.get(request_url)
+    fws_response = get_workspace_cloudPlatform(namespace, name)
     if fws_response.status_code != 200:
         print(f'Error retrieving workspace information for workspace {namespace}/{name}')
         print(fws_response.text)
-        
+
     fws_cloudplatform = fws_response.json()
     return fws_cloudplatform['workspace']['cloudPlatform']
 
