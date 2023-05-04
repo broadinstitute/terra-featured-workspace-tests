@@ -84,7 +84,7 @@ def import_workspace_attributes_TSV(namespace, workspace, attrs):
     return fapi.__post(uri, headers=headers, data=body)
 
 def get_workspace_cloudPlatform(namespace, name):
-    ''' get cloud platform of workspace'''
+    """get cloud platform of workspace"""
     request_url = f'https://api.firecloud.org/api/workspaces/{namespace}/{name}?fields=workspace.cloudPlatform'
 
     return fapi.__get(request_url)

@@ -67,7 +67,7 @@ def get_fw_json():
     return fws_json
 
 def get_cloudPlatform(namespace, name):
-    ''' get cloud platform of workspace'''
+    """get cloud platform of workspace"""
     fws_response = get_workspace_cloudPlatform(namespace, name)
     if fws_response.status_code != 200:
         print(f'Error retrieving workspace information for workspace {namespace}/{name}')
