@@ -61,7 +61,11 @@ def call_fiss(fapifunc, okcode, *args, specialcodes=None, **kwargs):
         return response
 
     # return the json response if all goes well
-    return response.json()
+    try:
+        return response.json()
+    except:
+        # not all responses are json
+        return response
 
 
 def format_timedelta(time_delta, hours_thresh):
