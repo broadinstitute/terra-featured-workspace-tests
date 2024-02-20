@@ -13,7 +13,7 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
     exceptions = []
     
     # get a list of all workspaces in the project
-    ws_json = call_fiss(fapi.list_workspaces, 200, fields='workspace.name,workspace.namespace')
+    ws_json = call_fiss(fapi.list_workspaces, 200, 'workspace.name,workspace.namespace')
     ws_all = []
     for ws in ws_json:
         ws_project = ws['workspace']['namespace']
