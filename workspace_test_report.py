@@ -7,6 +7,7 @@ from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
 from gcs_fns import run_subprocess
+from fiss_api_addons import clone_workspace_with_bucket_location
 
 
 def get_ws_bucket(project, name):
@@ -40,12 +41,13 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     original_owners = response['owners']
 
     # clone the Featured Workspace & check for errors
-    call_fiss(fapi.clone_workspace,
+    call_fiss(clone_workspace_with_bucket_location,
               201,
               original_project,
               original_name,
               clone_project,
               clone_name,
+              bucketLocation='us-central1',
               specialcodes=[409])  # 409 = workspace already exists
 
     # optionally copy entire bucket, including notebooks
