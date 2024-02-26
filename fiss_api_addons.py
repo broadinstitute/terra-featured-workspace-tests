@@ -100,6 +100,7 @@ def clone_workspace_with_bucket_location(from_namespace, from_workspace, to_name
         from_workspace (str): Source workspace's name
         to_namespace (str):  project to which target workspace belongs
         to_workspace (str): Target workspace's name
+        bucketLocation (str): Target workspace's bucket location
         authorizationDomain: (str) required authorization domains
         copyFilesWithPrefix: (str) prefix of bucket objects to copy to the destination workspace
 
