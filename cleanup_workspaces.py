@@ -13,7 +13,7 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
     exceptions = []
     
     # get a list of all workspaces in the project
-    ws_json = call_fiss(fapi.list_workspaces, 200)
+    ws_json = call_fiss(fapi.list_workspaces, 200, fields='workspace.name,workspace.namespace')
     ws_all = []
     for ws in ws_json:
         ws_project = ws['workspace']['namespace']
@@ -52,10 +52,13 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
                     ws_to_delete.add(ws)
     
     # delete those old workspaces
+    n_total = len(ws_to_delete)
+    n_done = 0
     for ws in ws_to_delete:
-        call_fiss(fapi.delete_workspace, 202, project, ws)
+        n_done += 1
+        call_fiss(fapi.delete_workspace, 202, project, ws, specialcodes=[404])  # a 404 means the workspace isn't found - already deleted
         if verbose:
-            print(ws + ' deleted')
+            print(ws + ' deleted (' + str(n_done) + '/' + str(n_total) + ')')
 
 
 
