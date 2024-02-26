@@ -17,6 +17,7 @@ on:
           required: false
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
   GCP_PROJECT_ID: "terra-featured-workspace-tests"
   GCP_SA_EMAIL: "terra-featured-workspace-tests@terra-featured-workspace-tests.iam.gserviceaccount.com"
 jobs:
@@ -63,18 +64,40 @@ jobs:
           echo "Constructed command:"
           echo "python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\" $([[ \"${{ github.event.inputs.mute_notifications }}\" == 'true' ]] && echo \"--mute_notifications\") $([[ \"${{ github.event.inputs.troubleshoot }}\" == 'true' ]] && echo \"--troubleshoot\")"
           echo "Running command..."
+          echo "Input: mute_notifications = '${{ github.event.inputs.mute_notifications }}'"
+          echo "Input: troubleshoot = '${{ github.event.inputs.troubleshoot }}'"
+          
 
-#      - name: Run Terra Featured Workspace Tests
-#        env:
-#          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
-#        run: |
-#          set -e
-#          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
-#          REPORT_NAME="master_report_${CURRENT_DATE}.html"
-#          python3 -u featured_workspaces_test.py \
-#            -n "$REPORT_NAME" \
-#            -v \
-#            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
-#            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
-#            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
+      - name: Construct Command
+        run: |
+          set -e
+          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          CMD="python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\""
+      
+          # Append flags based on inputs
+          if [[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]]; then
+            CMD="$CMD --mute_notifications"
+          fi
+          if [[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]]; then
+            CMD="$CMD --troubleshoot"
+          fi
+      
+          echo "Constructed command: $CMD"
+          echo $CMD > run_command.sh
+
+
+      - name: Run Terra Featured Workspace Tests
+        env:
+          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
+        run: |
+          set -e
+          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          python3 -u featured_workspaces_test.py \
+            -n "$REPORT_NAME" \
+            -v \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
+            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
