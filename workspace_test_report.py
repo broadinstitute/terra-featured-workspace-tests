@@ -7,7 +7,7 @@ from ws_class import Wspace
 from firecloud import api as fapi
 from fiss_fns import call_fiss
 from gcs_fns import run_subprocess
-
+from fiss_api_addons import get_workspace_cloudPlatform
 
 def get_ws_bucket(project, name):
     ''' get the google bucket path name for the given workspace
@@ -39,6 +39,14 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
     original_owners = response['owners']
 
+    #get cloud platform
+    cloudPlatform = get_workspace_cloudPlatform(original_project, original_name).json()['worksapce']['cloudPlatform']
+
+    if cloudPlatform == 'Azure':
+        bucket_location = None
+    else:
+        bucket_location = 'us-central1'
+
     # clone the Featured Workspace & check for errors
     call_fiss(fapi.clone_workspace,
               201,
@@ -46,7 +54,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
               original_name,
               clone_project,
               clone_name,
-              bucketLocation='us-central1',
+              bucketLocation=bucket_location,
               specialcodes=[409])  # 409 = workspace already exists
 
     # optionally copy entire bucket, including notebooks
