@@ -40,7 +40,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     original_owners = response['owners']
 
     #get cloud platform
-    cloudPlatform = get_workspace_cloudPlatform(original_project, original_name).json()['worksapce']['cloudPlatform']
+    cloudPlatform = get_workspace_cloudPlatform(original_project, original_name).json()['workspace']['cloudPlatform']
 
     if cloudPlatform == 'Azure':
         bucket_location = None
