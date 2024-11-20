@@ -53,7 +53,7 @@ jobs:
           set -e
           CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
           REPORT_NAME="master_report_${CURRENT_DATE}.html"
-          python3 -u scripts/featured_workspaces_test.py \
+          python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -v \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
