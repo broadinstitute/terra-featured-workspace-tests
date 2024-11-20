@@ -30,11 +30,11 @@ jobs:
           workload_identity_provider: "projects/953233968740/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
           service_account: ${{ env.GCP_SA_EMAIL }}
 
-      - id: secrets
-        uses: google-github-actions/get-secretmanager-secrets@v2
-        with:
-          secrets: |-
-            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid_key
+#      - id: secrets
+#        uses: google-github-actions/get-secretmanager-secrets@v2
+#        with:
+#          secrets: |-
+#            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid_key
 
       - name: Set up Python
         uses: actions/setup-python@v5
