@@ -57,5 +57,5 @@ jobs:
             -n "$REPORT_NAME" \
             -v \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
-            --mute-notifications \
+            --mute_notifications \
             --troubleshoot

@@ -17,8 +17,7 @@ def get_fws_dict_from_folder(gcs_path, test_master_report, clone_project, verbos
     report_folder = gcs_path + test_master_report
 
     # make sure the folder name is formatted correctly
-    if report_folder[-1] is '/':
-        report_folder = report_folder[:-1]
+    report_folder = report_folder.rstrip('/')
     
     # get list of reports in gcs bucket
     system_command = "gsutil ls " + report_folder
