@@ -1,0 +1,4 @@
+firecloud==0.16.37
+tenacity==9.0.0
+sendgrid==6.11.0
+dataclasses==0.6
