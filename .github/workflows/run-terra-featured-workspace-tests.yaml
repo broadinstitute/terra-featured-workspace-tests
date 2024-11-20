@@ -8,7 +8,9 @@ on:
     - cron: '0 0 */14 * *' # Every 2 weeks on Sunday at 00:00 UTC
   workflow_dispatch:
 
-
+env:
+  GCP_PROJECT_ID: "terra-featured-workspace-tests"
+  GCP_SA_EMAIL: "terra-featured-workspace-tests@terra-featured-workspace-tests.iam.gserviceaccount.com"
 jobs:
   run-featured-workspace-tests:
     runs-on: ubuntu-latest
@@ -24,15 +26,15 @@ jobs:
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          project_id: ${{ env.GCP_PROJECT_ID }}
           workload_identity_provider: "projects/953233968740/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
-          service_account: ${{ secrets.GCP_SA_EMAIL }}
+          service_account: ${{ env.GCP_SA_EMAIL }}
 
       - id: secrets
         uses: google-github-actions/get-secretmanager-secrets@v2
         with:
           secrets: |-
-            sendgrid_key:${{ secrets.GCP_PROJECT_ID }}/sendgrid-key
+            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid-key
 
       - name: Set up Python
         uses: actions/setup-python@v5
