@@ -1,5 +1,4 @@
 name: Run Terra Featured Workspace Tests
-
 on:
   pull_request:
     branches:
@@ -65,30 +64,17 @@ jobs:
           echo "python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\" $([[ \"${{ github.event.inputs.mute_notifications }}\" == 'true' ]] && echo \"--mute_notifications\") $([[ \"${{ github.event.inputs.troubleshoot }}\" == 'true' ]] && echo \"--troubleshoot\")"
           echo "Running command..."
 
-      - name: Run Terra Featured Workspace Tests
-        env:
-          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
-        run: |
-          set -e
-          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
-          REPORT_NAME="master_report_${CURRENT_DATE}.html"
-          python3 -u featured_workspaces_test.py \
-            -n "$REPORT_NAME" \
-            -v \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
-            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
-            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
+#      - name: Run Terra Featured Workspace Tests
+#        env:
+#          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
+#        run: |
+#          set -e
+#          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+#          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+#          python3 -u featured_workspaces_test.py \
+#            -n "$REPORT_NAME" \
+#            -v \
+#            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+#            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
+#            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
-      - name: Run Terra Featured Workspace Tests
-        env:
-          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
-        run: |
-          set -e
-          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
-          REPORT_NAME="master_report_${CURRENT_DATE}.html"
-          python3 -u featured_workspaces_test.py \
-            -n "$REPORT_NAME" \
-            -v \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
-            --mute_notifications \
-            --troubleshoot
