@@ -8,6 +8,8 @@ the README at https://pypi.python.org/pypi/firecloud.
 
 from firecloud import api as fapi
 import json
+
+from six import string_types
 from six.moves.urllib.parse import urlencode, urljoin
 
 def get_workflow_metadata_withInclude(namespace, workspace, submission_id, workflow_id, *keysToInclude):
