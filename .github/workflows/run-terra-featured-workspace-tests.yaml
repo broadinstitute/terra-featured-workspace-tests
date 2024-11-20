@@ -1,0 +1,41 @@
+name: Run Terra Featured Workspace Tests
+
+on:
+  schedule:
+    - cron: '0 0 */14 * *' # Every 2 weeks on Sunday at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  run-featured-workspace-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Authenticate with Google Cloud
+        run: |
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}" | gcloud auth activate-service-account --key-file=-
+
+      - name: Run Terra Featured Workspace Tests
+        run: |
+          set -e
+          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          python3 -u scripts/featured_workspaces_test.py \
+            -n "$REPORT_NAME" \
+            -v \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            --mute-notifications \
+            --troubleshoot
