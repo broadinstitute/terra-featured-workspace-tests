@@ -55,7 +55,7 @@ Or using Docker:
 - run workflow submissions for each workflow in the workspace
 - query the job history of the completed submissions and generate a report
 - publish the report to a google bucket and set permissions to be viewable by anyone
-    - the default google bucket, which you can change using the `--gcs_path` flag, is [gs://dsp-fieldeng/fw_reports/](https://console.cloud.google.com/storage/browser/dsp-fieldeng/fw_reports?project=broad-dsde-dev)
+    - the default google bucket, which you can change using the `--gcs_path` flag, is [gs://terra-featured-workspace-tests-reports/fw_reports/](https://console.cloud.google.com/storage/browser/terra-featured-workspace-tests-reports/fw_reports/)
 
 
 
