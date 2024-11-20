@@ -1,12 +1,18 @@
 name: Run Terra Featured Workspace Tests
 
 on:
-  pull_request:
-    branches:
-      - master
   schedule:
     - cron: '0 0 */14 * *' # Every 2 weeks on Sunday at 00:00 UTC
   workflow_dispatch:
+    inputs:
+      mute_notifications:
+          description: 'Mute notifications'
+          default: 'false'
+          required: false
+      troubleshoot:
+          description: 'Enable troubleshooting'
+          default: 'false'
+          required: false
 
 env:
   GCP_PROJECT_ID: "terra-featured-workspace-tests"
@@ -30,16 +36,11 @@ jobs:
           workload_identity_provider: "projects/953233968740/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider"
           service_account: ${{ env.GCP_SA_EMAIL }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+      - id: secrets
+        uses: google-github-actions/get-secretmanager-secrets@v2
         with:
-          project_id: ${{ env.GCP_PROJECT_ID }}
-
-      #      - id: secrets
-#        uses: google-github-actions/get-secretmanager-secrets@v2
-#        with:
-#          secrets: |-
-#            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid_key
+          secrets: |-
+            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid_key
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -50,6 +51,30 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
+          
+
+      - name: Debug constructed command
+        run: |
+          set -e
+          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          echo "Constructed command:"
+          echo "python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\" $([[ \"${{ github.event.inputs.mute_notifications }}\" == 'true' ]] && echo \"--mute_notifications\") $([[ \"${{ github.event.inputs.troubleshoot }}\" == 'true' ]] && echo \"--troubleshoot\")"
+          echo "Running command..."
+
+      - name: Run Terra Featured Workspace Tests
+        env:
+          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
+        run: |
+          set -e
+          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
+          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          python3 -u featured_workspaces_test.py \
+            -n "$REPORT_NAME" \
+            -v \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
+            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
       - name: Run Terra Featured Workspace Tests
         env:
