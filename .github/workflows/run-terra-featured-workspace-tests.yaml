@@ -34,7 +34,7 @@ jobs:
         uses: google-github-actions/get-secretmanager-secrets@v2
         with:
           secrets: |-
-            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid-key
+            sendgrid_key:${{ env.GCP_PROJECT_ID }}/sendgrid_key
 
       - name: Set up Python
         uses: actions/setup-python@v5
