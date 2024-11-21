@@ -1,8 +1,5 @@
 name: Run Terra Featured Workspace Tests
 on:
-  pull_request:
-    branches:
-      - master
   schedule:
     - cron: '0 0 */14 * *' # Every 2 weeks on Sunday at 00:00 UTC
   workflow_dispatch:
@@ -54,38 +51,6 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
-          
-
-      - name: Debug constructed command
-        run: |
-          set -e
-          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
-          REPORT_NAME="master_report_${CURRENT_DATE}.html"
-          echo "Constructed command:"
-          echo "python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\" $([[ \"${{ github.event.inputs.mute_notifications }}\" == 'true' ]] && echo \"--mute_notifications\") $([[ \"${{ github.event.inputs.troubleshoot }}\" == 'true' ]] && echo \"--troubleshoot\")"
-          echo "Running command..."
-          echo "Input: mute_notifications = '${{ github.event.inputs.mute_notifications }}'"
-          echo "Input: troubleshoot = '${{ github.event.inputs.troubleshoot }}'"
-          
-
-      - name: Construct Command
-        run: |
-          set -e
-          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
-          REPORT_NAME="master_report_${CURRENT_DATE}.html"
-          CMD="python3 -u featured_workspaces_test.py -n \"$REPORT_NAME\" -v --gcs_path \"gs://terra-featured-workspace-tests-reports/fw_reports/\""
-      
-          # Append flags based on inputs
-          if [[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]]; then
-            CMD="$CMD --mute_notifications"
-          fi
-          if [[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]]; then
-            CMD="$CMD --troubleshoot"
-          fi
-      
-          echo "Constructed command: $CMD"
-          echo $CMD > run_command.sh
-
 
       - name: Run Terra Featured Workspace Tests
         env:
