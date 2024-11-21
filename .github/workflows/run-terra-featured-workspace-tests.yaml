@@ -52,6 +52,11 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.GCP_PROJECT_ID }}
+
       - name: Run Terra Featured Workspace Tests
         env:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
