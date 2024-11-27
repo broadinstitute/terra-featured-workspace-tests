@@ -29,6 +29,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Generate CURRENT_DATE
+        id: date
+        run: echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
@@ -62,7 +66,6 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)
           REPORT_NAME="master_report_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
@@ -71,3 +74,12 @@ jobs:
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
+      - name: Send custom event details to a Slack workflow
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: webhook-trigger
+          payload: |
+            is_successful: "${{ github.action_status}}"
+            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${CURRENT_DATE}.html"
+            run_url: "${{github.run_number}}"
