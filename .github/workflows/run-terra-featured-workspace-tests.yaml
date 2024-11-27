@@ -33,7 +33,7 @@ jobs:
         id: date
         run: |
           echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV 
-          echo "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${{CURRENT_DATE}}.html"
+          echo "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${{env.CURRENT_DATE}}.html"
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -83,5 +83,5 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             is_successful: "${{ github.action_status}}"
-            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${{CURRENT_DATE}}.html"
+            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${{env.CURRENT_DATE}}.html"
             run_url: "${{github.run_number}}"
