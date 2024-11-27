@@ -32,9 +32,7 @@ jobs:
       - name: Generate CURRENT_DATE
         id: date
         run: |
-          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV 
-          echo "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_${{env.CURRENT_DATE}}.html"
-
+          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:
