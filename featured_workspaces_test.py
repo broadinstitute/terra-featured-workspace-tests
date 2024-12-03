@@ -203,9 +203,9 @@ def test_all(args):
         clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
                                    clone_time=clone_time, share_with=args.share_with,
                                    call_cache=args.call_cache, verbose=args.verbose)
-        clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
+        # clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
         clone_ws.start_timer()  # start a timer for this workspace's submissions
-        clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
+        # clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
         fws_testing[ws.key] = clone_ws
 
     # monitor submissions
