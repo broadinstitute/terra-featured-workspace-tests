@@ -43,10 +43,10 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
     # clone the Featured Workspace & check for errors
     call_fiss(clone_workspace_with_bucket_location,
               201,
-              original_project,
-              original_name,
-              clone_project,
-              clone_name,
+              from_namespace=original_project,
+              from_workspace=original_name,
+              to_namespace=clone_project,
+              to_workspace=clone_name,
               bucketLocation='us-central1',
               specialcodes=[409])  # 409 = workspace already exists
 

@@ -2,11 +2,15 @@ import os
 import argparse
 import time
 from datetime import datetime
+
+from firecloud.errors import FireCloudServerError
+
 from workspace_test_report import clone_workspace
 from get_fws import format_fws, get_fws_dict_from_folder
 from gcs_fns import upload_to_gcs
 from cleanup_workspaces import cleanup_workspaces
 from get_cost_for_all_tests import get_cost_of_all_tests, get_cost_of_test
+
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
 
@@ -200,13 +204,17 @@ def test_all(args):
     fws_testing = {}
     # set up to run tests on all of them
     for ws in fws.values():
-        clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
-                                   clone_time=clone_time, share_with=args.share_with,
-                                   call_cache=args.call_cache, verbose=args.verbose)
-        # clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
-        clone_ws.start_timer()  # start a timer for this workspace's submissions
-        # clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
-        fws_testing[ws.key] = clone_ws
+        try:
+            clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
+                                       clone_time=clone_time, share_with=args.share_with,
+                                       call_cache=args.call_cache, verbose=args.verbose)
+            clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
+            clone_ws.start_timer()  # start a timer for this workspace's submissions
+            clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
+            fws_testing[ws.key] = clone_ws
+        except FireCloudServerError as e:
+            print(f"Unable to clone {ws.project}.{ws.workspace} because the error {e} occurred.")
+            pass
 
     # monitor submissions
     break_out = False
@@ -246,29 +254,41 @@ def test_all(args):
                 time.sleep(args.sleep_time - (now - start))
 
     # generate & open the master report
-    master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, report_name=report_name, ws_dict=fws_testing, verbose=args.verbose)
+    master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, report_name=report_name,
+                                                ws_dict=fws_testing, verbose=args.verbose)
     os.system('open ' + master_report_path)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='')
 
-    parser.add_argument('--test_master_report', '-r', type=str, default=None, help='folder name in gcs bucket to use to generate report')
-    parser.add_argument('--report_name', '-n', type=str, default=None, help='name of master report (ideally with a timestamp)')
+    parser.add_argument('--test_master_report', '-r', type=str, default=None,
+                        help='folder name in gcs bucket to use to generate report')
+    parser.add_argument('--report_name', '-n', type=str, default=None,
+                        help='name of master report (ideally with a timestamp)')
 
-    parser.add_argument('--cost_report', '-c', type=str, default=None, help='name of original master test report to query for cost')
+    parser.add_argument('--cost_report', '-c', type=str, default=None,
+                        help='name of original master test report to query for cost')
 
-    parser.add_argument('--clone_project', type=str, default='featured-workspace-testing', help='project for cloned workspace')
-    parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org', help='email address of person or group with which to share cloned workspace')
-    parser.add_argument('--sleep_time', type=int, default=60, help='time to wait between checking whether the submissions are complete')
-    parser.add_argument('--gcs_path', type=str, default='gs://terra-featured-workspace-tests-reports/fw_reports/', help='google bucket path to save reports')
-    parser.add_argument('--abort_hr', type=int, default=48, help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
-    parser.add_argument('--call_cache', type=bool, default=False, help='whether to call cache the submissions (default False for FW tests)')
+    parser.add_argument('--clone_project', type=str, default='featured-workspace-testing',
+                        help='project for cloned workspace')
+    parser.add_argument('--share_with', type=str, default='GROUP_FireCloud-Support@firecloud.org',
+                        help='email address of person or group with which to share cloned workspace')
+    parser.add_argument('--sleep_time', type=int, default=60,
+                        help='time to wait between checking whether the submissions are complete')
+    parser.add_argument('--gcs_path', type=str, default='gs://terra-featured-workspace-tests-reports/fw_reports/',
+                        help='google bucket path to save reports')
+    parser.add_argument('--abort_hr', type=int, default=48,
+                        help='# of hours after which to abort submissions (default 24). set to None if you do not wish to abort ever.')
+    parser.add_argument('--call_cache', type=bool, default=False,
+                        help='whether to call cache the submissions (default False for FW tests)')
 
-    parser.add_argument('--mute_notifications', '-m', action='store_true', help='do NOT send emails to workspace owners in case of failure (default is do send)')
+    parser.add_argument('--mute_notifications', '-m', action='store_true',
+                        help='do NOT send emails to workspace owners in case of failure (default is do send)')
     parser.add_argument('--skip_cleanup', action='store_true', help='do NOT clean up old workspaces')
 
-    parser.add_argument('--troubleshoot', '-t', action='store_true', help='run on a subset of FWs that go quickly, to test the report')
+    parser.add_argument('--troubleshoot', '-t', action='store_true',
+                        help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
     args = parser.parse_args()
