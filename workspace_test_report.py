@@ -38,7 +38,7 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
 
     # get email address(es) of owner(s) of original workspace
 
-    response = call_fiss(fapi.get_workspace, 200, original_project, original_name, specialcodes=[400])  #Ignore the case of requester pays for anvil
+    response = call_fiss(fapi.get_workspace, 200, original_project, original_name)  #Ignore the case of requester pays for anvil
     original_owners = response['owners']
 
     # clone the Featured Workspace & check for errors

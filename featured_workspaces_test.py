@@ -198,6 +198,8 @@ def test_all(args):
                 copy_fws[key] = fws[key]
             elif 'Terra_Quickstart_Workspace' in key:  # one workflow fails in a few minutes
                 copy_fws[key] = fws[key]
+            elif 'AnVIL_T2T' in key:
+                copy_fws[key] = fws[key]
         fws = dict(copy_fws)
         print(fws.keys())
 
