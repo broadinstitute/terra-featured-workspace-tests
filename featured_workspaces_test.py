@@ -3,6 +3,7 @@ import argparse
 import time
 from datetime import datetime
 
+import tenacity
 from firecloud.errors import FireCloudServerError
 
 from workspace_test_report import clone_workspace
@@ -206,6 +207,7 @@ def test_all(args):
     fws_testing = {}
     # set up to run tests on all of them
     for ws in fws.values():
+        try:
             clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
                                        clone_time=clone_time, share_with=args.share_with,
                                        call_cache=args.call_cache, verbose=args.verbose)
@@ -213,6 +215,9 @@ def test_all(args):
             clone_ws.start_timer()  # start a timer for this workspace's submissions
             clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
             fws_testing[ws.key] = clone_ws
+
+        except tenacity.RetryError as e:
+            pass
 
     # monitor submissions
     break_out = False
