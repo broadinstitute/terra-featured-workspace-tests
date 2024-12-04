@@ -75,6 +75,7 @@ jobs:
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
       - name: Send custom event details to a Slack workflow
+        if: ${{ github.event.inputs.mute_notifications != 'true' }}
         uses: slackapi/slack-github-action@v2.0.0
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
