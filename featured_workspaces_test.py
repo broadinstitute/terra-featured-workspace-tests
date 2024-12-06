@@ -233,7 +233,7 @@ def test_all(args):
         )
         if cloned_workspace:
             with lock:
-                fws_testing[ws.key] = clone_ws
+                fws_testing[ws.key] = cloned_workspace
 
     fws_testing = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
