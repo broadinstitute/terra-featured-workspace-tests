@@ -235,6 +235,23 @@ def test_all(args):
             with lock:
                 fws_testing[ws.key] = cloned_workspace
 
+    def check_submission_on_workspace(clone_ws, args, gcs_path_subfolder, send_notifications):
+        if args.verbose:
+            print(f" Checking for submission status for {clone_ws.workspace}:")
+        if clone_ws.status is None:
+            clone_ws.check_submissions(abort_hr=args.abort_hr)
+            if not clone_ws.active_submissions:
+                clone_ws.stop_timer()
+                clone_ws.generate_workspace_report(gcs_path_subfolder, send_notifications, args.verbose)
+                return 1
+        else:
+            if args.verbose:
+                print(f"    {clone_ws.status}")
+            return 1
+        return 0
+
+
+
     fws_testing = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
         futures = [
@@ -246,42 +263,22 @@ def test_all(args):
         for future in futures:
             future.result()
 
-    # monitor submissions
-    break_out = False
-    while not break_out:
-        start = time.time()  # to help not check too often
+    while True:
+        start = time.time()
         if args.verbose:
-            print('\n' + datetime.today().strftime('%H:%M') + ' status check:')
-        count_done = 0
+            print(f"\n{datetime.today().strftime('%H:%M')} status check:")
+        count_done = sum(
+            check_submission_on_workspace(clone_ws, args, gcs_path_subfolder, send_notifications)
+            for clone_ws in fws_testing.values()
+        )
 
-        # loop through all workspaces, do submissions / check status, and generate individual reports
-        for clone_ws in fws_testing.values():
-            if args.verbose:
-                print('  ' + clone_ws.workspace + ':')
-
-            # check status of all submissions
-            if clone_ws.status is None:
-                clone_ws.check_submissions(abort_hr=args.abort_hr)
-                if len(clone_ws.active_submissions) == 0:  # if all submissions in this workspace are DONE
-                    clone_ws.stop_timer()
-                    # generate workspace report
-                    clone_ws.generate_workspace_report(gcs_path_subfolder, send_notifications, args.verbose)
-                    count_done += 1
-            else:
-                count_done += 1
-                print('    ' + clone_ws.status)
-
-        # track progress
         if args.verbose:
-            print('Finished ' + str(count_done) + ' of ' + str(len(fws_testing)) + ' Featured Workspaces to be tested')
-
-        if count_done == len(fws_testing):  # if all the submissions in all workspaces are done
-            break_out = True
-        else:
-            # don't continue until at least args.sleep_time seconds have elapsed
-            now = time.time()
-            if now - start < args.sleep_time:
-                time.sleep(args.sleep_time - (now - start))
+            print(f"Finished {count_done} of {len(fws_testing)} Featured Workspaces to be tested")
+        if count_done == len(fws_testing):
+            break
+        elapsed = time.time() - start
+        if elapsed < args.sleep_time:
+            time.sleep(args.sleep_time - elapsed)
 
     # generate & open the master report
     master_report_path = generate_master_report(args.gcs_path, clone_time=clone_time, report_name=report_name,
