@@ -2,6 +2,8 @@ import os
 import argparse
 import time
 from datetime import datetime
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 import tenacity
 from firecloud.errors import FireCloudServerError
@@ -11,6 +13,8 @@ from get_fws import format_fws, get_fws_dict_from_folder
 from gcs_fns import upload_to_gcs
 from cleanup_workspaces import cleanup_workspaces
 from get_cost_for_all_tests import get_cost_of_all_tests, get_cost_of_test
+
+lock = threading.Lock()
 
 
 # TODO: implement unit tests, use wiremock - to generate canned responses for testing with up-to-date snapshots of errors
@@ -204,20 +208,43 @@ def test_all(args):
         fws = dict(copy_fws)
         print(fws.keys())
 
-    fws_testing = {}
-    # set up to run tests on all of them
-    for ws in fws.values():
+    def process_workspace(project, workspace, clone_project, clone_time, share_with, call_cache, verbose, abort_hr):
         try:
-            clone_ws = clone_workspace(ws.project, ws.workspace, args.clone_project,
-                                       clone_time=clone_time, share_with=args.share_with,
-                                       call_cache=args.call_cache, verbose=args.verbose)
-            clone_ws.create_submissions(verbose=args.verbose)  # set up the submissions
-            clone_ws.start_timer()  # start a timer for this workspace's submissions
-            clone_ws.check_submissions(abort_hr=args.abort_hr, verbose=False)  # start them
-            fws_testing[ws.key] = clone_ws
-
+            cloned_workspace = clone_workspace(
+                project, workspace, clone_project,
+                clone_time=clone_time, share_with=share_with,
+                call_cache=call_cache, verbose=verbose
+            )
+            cloned_workspace.create_submissions(verbose=verbose)
+            cloned_workspace.start_timer()
+            cloned_workspace.check_submissions(abort_hr=abort_hr, verbose=False)
+            return cloned_workspace
         except tenacity.RetryError as e:
-            pass
+            if verbose:
+                print(f"RetryError while processing workspace {workspace}: {e}")
+            return None
+
+    def threaded_process_workspace(ws, fws_testing, lock, args, clone_time):
+        cloned_workspace = process_workspace(
+            ws.project, ws.workspace, args.clone_project,
+            clone_time=clone_time, share_with=args.share_with,
+            call_cache=args.call_cache, verbose=args.verbose,
+            abort_hr=args.abort_hr
+        )
+        if cloned_workspace:
+            with lock:
+                fws_testing[ws.key] = clone_ws
+
+    fws_testing = {}
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(
+                threaded_process_workspace, ws, fws_testing, lock, args, clone_time
+            )
+            for ws in fws.values()
+        ]
+        for future in futures:
+            future.result()
 
     # monitor submissions
     break_out = False
