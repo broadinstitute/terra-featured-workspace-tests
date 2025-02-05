@@ -61,14 +61,29 @@ jobs:
         with:
           project_id: ${{ env.GCP_PROJECT_ID }}
 
-      - name: Run Terra Featured Workspace Tests
+      - name: Run Terra Featured Workspace Tests - Batch 1
         env:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_1${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
+            -b 1 \
+            -v \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
+            $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
+
+      - name: Run Terra Featured Workspace Tests - Batch 2
+        env:
+          SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
+        run: |
+          set -e
+          REPORT_NAME="master_report_batch_2${CURRENT_DATE}.html"
+          python3 -u featured_workspaces_test.py \
+            -n "$REPORT_NAME" \
+            -b 2 \
             -v \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \

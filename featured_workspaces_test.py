@@ -188,8 +188,24 @@ def test_all(args):
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False)
+    listed_keys = list(fws.keys())
+    listed_keys.sort()
+    fws = {i: fws[i] for i in listed_keys}
 
-    # temporary for troubleshooting/testing
+    batch_size = 32
+    overlap = 1
+
+    batch_1_keys = listed_keys[:batch_size]
+    batch_2_keys = listed_keys[batch_size - overlap: batch_size * 2 - overlap]
+
+    batch_1 = {i: fws[i] for i in batch_1_keys}
+    batch_2 = {i: fws[i] for i in batch_2_keys}
+
+    if args.batch_number == 1:
+        fws = batch_1
+    elif args.batch_number == 2:
+        fws = batch_2
+
     if args.troubleshoot:
         copy_fws = {}
         for key in fws.keys():
@@ -318,6 +334,8 @@ if __name__ == '__main__':
                         help='run on a subset of FWs that go quickly, to test the report')
     parser.add_argument('--verbose', '-v', action='store_true', help='print progress text')
 
+    parser.add_argument('--batch_number', '-b', type=int, default=1)
+
     args = parser.parse_args()
 
     if not args.troubleshoot:
@@ -326,7 +344,7 @@ if __name__ == '__main__':
 
         if not args.skip_cleanup:
             # delete any workspaces older than 20 days
-            cleanup_workspaces(args.clone_project, age_days=20, verbose=args.verbose)
+            cleanup_workspaces(args.clone_project, age_days=200, verbose=args.verbose)
 
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)
