@@ -192,19 +192,28 @@ def test_all(args):
     listed_keys.sort()
     fws = {i: fws[i] for i in listed_keys}
 
-    batch_size = 32
+    batch_size = 16
     overlap = 1
 
     batch_1_keys = listed_keys[:batch_size]
     batch_2_keys = listed_keys[batch_size - overlap: batch_size * 2 - overlap]
+    batch_3_keys = listed_keys[batch_size * 2 - overlap: batch_size * 3 - overlap]
+    batch_4_keys = listed_keys[batch_size * 3 - overlap: batch_size * 4 - overlap]
 
     batch_1 = {i: fws[i] for i in batch_1_keys}
     batch_2 = {i: fws[i] for i in batch_2_keys}
+    batch_3 = {i: fws[i] for i in batch_3_keys}
+    batch_4 = {i: fws[i] for i in batch_4_keys}
 
+    # Assigning based on batch number
     if args.batch_number == 1:
         fws = batch_1
     elif args.batch_number == 2:
         fws = batch_2
+    elif args.batch_number == 3:
+        fws = batch_3
+    elif args.batch_number == 4:
+        fws = batch_4
 
     if args.troubleshoot:
         copy_fws = {}
@@ -265,8 +274,6 @@ def test_all(args):
                 print(f"    {clone_ws.status}")
             return 1
         return 0
-
-
 
     fws_testing = {}
     with ThreadPoolExecutor(max_workers=10) as executor:
