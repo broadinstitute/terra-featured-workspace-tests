@@ -4,9 +4,12 @@ import tenacity as tn
 import logging
 import sys
 
+from google.auth import default
+from google.cloud import storage
 
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def my_before_sleep(retry_state):
     if retry_state.attempt_number < 1:
@@ -15,12 +18,14 @@ def my_before_sleep(retry_state):
         loglevel = logging.WARNING
     logger.log(
         loglevel, 'Retrying %s with %s in %s seconds; attempt #%s ended with: %s',
-        retry_state.fn, retry_state.args, str(int(retry_state.next_action.sleep)), retry_state.attempt_number, retry_state.outcome)
+        retry_state.fn, retry_state.args, str(int(retry_state.next_action.sleep)), retry_state.attempt_number,
+        retry_state.outcome)
+
 
 @tn.retry(wait=tn.wait_chain(*[tn.wait_fixed(5)] +
-                       [tn.wait_fixed(10)] +
-                       [tn.wait_fixed(30)] +
-                       [tn.wait_fixed(60)]),
+                              [tn.wait_fixed(10)] +
+                              [tn.wait_fixed(30)] +
+                              [tn.wait_fixed(60)]),
           stop=tn.stop_after_attempt(5),
           before_sleep=my_before_sleep)
 def run_subprocess(cmd, errorMessage):
@@ -35,27 +40,43 @@ def run_subprocess(cmd, errorMessage):
         print("Exited with " + str(e.returncode) + "-" + e.output)
         exit(1)
 
+
 def convert_to_public_url(gs_input):
-    return gs_input.replace('gs://','https://storage.googleapis.com/')
+    return gs_input.replace('gs://', 'https://storage.googleapis.com/')
+
 
 def upload_to_gcs(local_path, gcs_path, verbose=True):
+    """
+    Uploads a file to Google Cloud Storage and makes it publicly accessible.
 
-    file_name = local_path.split('/')[-1] # this should be the name of the cloned workspace + '.html'
+    Args:
+        local_path (str): Path to the local file to upload.
+        gcs_path (str): Destination GCS path (e.g., 'gs://my-bucket/path/').
+        verbose (bool): Whether to print upload status messages.
 
-    # write file to google cloud 
-    system_command = "gsutil cp " + local_path + " " + gcs_path
-    os.system(system_command)
+    Returns:
+        str: Public URL of the uploaded file.
+    """
+    credentials, project_id = default()
+    print(f"Authenticated with project: {project_id}")
+    client = storage.Client()
+    bucket_name = gcs_path.replace("gs://", "").split("/")[0]
+    destination_blob_name = "/".join(gcs_path.replace("gs://", "").split("/")[1:])
 
-    # make file publicly accessible
-    system_command = "gsutil acl ch -u AllUsers:R " + gcs_path + file_name
-    os.system(system_command)
-
-    # get report path (link to report on google cloud)
-    public_path = convert_to_public_url(gcs_path)
-    report_path = public_path + file_name
+    # Extract file name
+    file_name = os.path.basename(local_path)  # Ensures correct filename extraction
+    destination_blob_name = destination_blob_name.rstrip('/') + '/' + file_name  # Ensure proper path
 
     if verbose:
-        print("Report can be viewed at " + report_path)
+        print(f"Uploading {local_path} to gs://{bucket_name}/{destination_blob_name}...")
 
-    return report_path
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(local_path)
+    blob.make_public()
+    public_url = f"https://storage.googleapis.com/{bucket_name}/{destination_blob_name}"
 
+    if verbose:
+        print(f"✅ Report uploaded successfully. View at: {public_url}")
+
+    return public_url

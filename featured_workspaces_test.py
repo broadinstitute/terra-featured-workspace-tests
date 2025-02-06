@@ -174,10 +174,10 @@ def test_all(args):
     # determine whether to email notifications of failures
     send_notifications = not args.mute_notifications
     batch_number = "batch_unknown"
+    clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
 
     # make a folder for this set of tests (folder name is current timestamp)
     if args.report_name is None:
-        clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
         report_name = 'master_report_' + clone_time + '.html'
     else:
         report_name = args.report_name
@@ -188,7 +188,7 @@ def test_all(args):
             clone_time = parts[1][1:]
         else:
             clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
-    gcs_path_subfolder = f"gs://terra-featured-workspace-tests-reports/fw_reports/{clone_time}/{batch_number}"
+    gcs_path_subfolder = f"gs://terra-featured-workspace-tests-reports/fw_reports/{clone_time}/{batch_number}/"
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False)
