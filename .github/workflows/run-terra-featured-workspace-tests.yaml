@@ -238,5 +238,5 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             is_successful: "${{ github.action_status }}"
-            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/master_report_2${{env.CURRENT_DATE}}.html"
+            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/${{env.CURRENT_DATE}}/"
             run_url: "${{github.run_number}}"
