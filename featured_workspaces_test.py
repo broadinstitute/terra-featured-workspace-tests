@@ -138,7 +138,7 @@ def generate_master_report(gcs_path, clone_time, report_name, ws_dict=None, verb
 <p>
 <center><div style='background-color:#82AA52; color:#FAFBFD; height:100px'>
 <h1>
-<img src='https://app.terra.bio/static/media/logo-wShadow.c7059479.svg' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
+<img src='https://terra.bio/wp-content/uploads/2023/12/Terra-White-logo.png' alt='Terra rocks!' style='vertical-align: middle;' height='100'>
 <span style='vertical-align: middle;'>
 Featured Workspace Report: Master list</span></h1></center></div>
 

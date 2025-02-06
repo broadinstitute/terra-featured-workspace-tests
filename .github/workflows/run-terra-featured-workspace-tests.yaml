@@ -65,7 +65,7 @@ jobs:
             -n "$REPORT_NAME" \
             -b 1 \
             -v \
-            --abort_hr 1 \
+            --abort_hr 2 \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
@@ -117,7 +117,7 @@ jobs:
             -n "$REPORT_NAME" \
             -b 2 \
             -v \
-            --abort_hr 1 \
+            --abort_hr 2 \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
@@ -169,7 +169,7 @@ jobs:
             -n "$REPORT_NAME" \
             -b 3 \
             -v \
-            --abort_hr 1 \
+            --abort_hr 2 \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
@@ -220,7 +220,7 @@ jobs:
             -n "$REPORT_NAME" \
             -b 4 \
             -v \
-            --abort_hr 1 \
+            --abort_hr 2 \
             --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
