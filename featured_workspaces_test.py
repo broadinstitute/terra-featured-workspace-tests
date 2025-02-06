@@ -173,6 +173,7 @@ Featured Workspace Report: Master list</span></h1></center></div>
 def test_all(args):
     # determine whether to email notifications of failures
     send_notifications = not args.mute_notifications
+    batch_number = "batch_unknown"
 
     # make a folder for this set of tests (folder name is current timestamp)
     if args.report_name is None:
@@ -180,20 +181,23 @@ def test_all(args):
         report_name = 'master_report_' + clone_time + '.html'
     else:
         report_name = args.report_name
-        clone_time = report_name.replace('master_report_', '').replace('.html', '')
-        if len(clone_time) == 0:  # in case the input name was poorly formatted
+        cleaned_name = report_name.replace("master_report_", "").replace(".html", "")
+        parts = cleaned_name.split("batch_")
+        if len(parts) == 2:
+            batch_number = "batch_" + parts[1][:1]
+            clone_time = parts[1][1:]
+        else:
             clone_time = datetime.today().strftime('%Y-%m-%d-%H-%M-%S')
-
-    gcs_path_subfolder = args.gcs_path + clone_time + '/'
+    gcs_path_subfolder = f"gs://terra-featured-workspace-tests-reports/fw_reports/{clone_time}/{batch_number}"
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False)
-    listed_keys = list(fws.keys())
+    listed_keys = list(fws.keys())[:16]
     listed_keys.sort()
     fws = {i: fws[i] for i in listed_keys}
 
-    batch_size = 16
-    overlap = 1
+    batch_size = 4
+    overlap = 0
 
     batch_1_keys = listed_keys[:batch_size]
     batch_2_keys = listed_keys[batch_size - overlap: batch_size * 2 - overlap]
