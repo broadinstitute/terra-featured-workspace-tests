@@ -192,11 +192,11 @@ def test_all(args):
 
     # get dict of all Featured Workspaces
     fws = format_fws(verbose=False)
-    listed_keys = list(fws.keys())[:10]
+    listed_keys = list(fws.keys())
     listed_keys.sort()
     fws = {i: fws[i] for i in listed_keys}
 
-    batch_size = 4
+    batch_size = 18
     overlap = 0
 
     batch_1_keys = listed_keys[:batch_size]
