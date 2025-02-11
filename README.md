@@ -3,6 +3,11 @@ This code is to test that Terra Featured Workspaces are working properly. It gen
 
 Note: Currently this code tests all workflows within a Featured Workspace, but it does not test notebooks.
 
+### Development Notes
+
+1. Tests are divided in 4 batches, there exists this parameter in code `batch_size = 18` that needs to be changed if number of featured workspaces. 
+2. The tests run periodically every 14 days, but you can dispatch manually through Workflow Dispatcher
+
 ### Quickstart
 Prerequisites: You will need python3 and may need to install some packages if you don't have them already. After installing python3 and pip3, you can import packages needed to run these scripts using `sudo pip3 install dataclasses firecloud tenacity`. Alternately, use a Docker instead.
 
