@@ -1,4 +1,4 @@
-# terra-featured-workspace-tests
+# TERRA FEATURED WORKSPACES TESTS
 This code is to test that Terra Featured Workspaces are working properly. It generates individual reports for each workspace, as well as a master report listing all the tested workspaces with links to their individual reports. The reports live in a google bucket and are publicly viewable.
 
 Note: Currently this code tests all workflows within a Featured Workspace, but it does not test notebooks.
