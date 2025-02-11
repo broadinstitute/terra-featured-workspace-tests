@@ -354,8 +354,8 @@ if __name__ == '__main__':
         get_cost_of_all_tests(args.gcs_path, args.clone_project, args.verbose)
 
         if not args.skip_cleanup:
-            # delete any workspaces older than 20 days
-            cleanup_workspaces(args.clone_project, age_days=200, verbose=args.verbose)
+            # delete any workspaces older than 30 days
+            cleanup_workspaces(args.clone_project, age_days=30, verbose=args.verbose)
 
     if args.test_master_report is not None:
         fws_dict = get_fws_dict_from_folder(args.gcs_path, args.test_master_report, args.clone_project, args.verbose)

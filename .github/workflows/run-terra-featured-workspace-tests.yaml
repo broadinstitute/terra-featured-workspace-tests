@@ -60,7 +60,7 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_1${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_1_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 1 \
@@ -112,7 +112,7 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 2 \
@@ -159,12 +159,12 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Terra Featured Workspace Tests - Batch 2
+      - name: Run Terra Featured Workspace Tests - Batch 3
         env:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 3 \
@@ -210,12 +210,12 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run Terra Featured Workspace Tests - Batch 2
+      - name: Run Terra Featured Workspace Tests - Batch 4
         env:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 4 \
@@ -238,5 +238,5 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             is_successful: "${{ github.action_status }}"
-            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/${{env.CURRENT_DATE}}/"
+            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/"
             run_url: "${{github.run_number}}"
