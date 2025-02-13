@@ -164,7 +164,7 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_3_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 3 \
@@ -215,7 +215,7 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_4_${CURRENT_DATE}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 4 \
