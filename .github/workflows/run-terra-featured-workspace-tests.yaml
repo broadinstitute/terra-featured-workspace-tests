@@ -27,10 +27,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate CURRENT_DATE
+      - name: Generate CURRENT_DATETIME
         id: date
         run: |
-          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATETIME=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
+          
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -60,13 +62,13 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_1_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_1_${CURRENT_DATETIME}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 1 \
             -v \
             --abort_hr 2 \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/${CURRENT_DATE}/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
@@ -79,10 +81,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate CURRENT_DATE
+      - name: Generate CURRENT_DATETIME
         id: date
         run: |
-          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATETIME=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -112,13 +115,13 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_2_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_2_${CURRENT_DATETIME}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 2 \
             -v \
             --abort_hr 2 \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/${CURRENT_DATE}/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
 
@@ -131,10 +134,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate CURRENT_DATE
+      - name: Generate CURRENT_DATETIME
         id: date
         run: |
-          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATETIME=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -164,13 +168,13 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_3_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_3_${CURRENT_DATETIME}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 3 \
             -v \
             --abort_hr 2 \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/${CURRENT_DATE}/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
   run-featured-workspace-tests-batch-4:
@@ -182,10 +186,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Generate CURRENT_DATE
+      - name: Generate CURRENT_DATETIME
         id: date
         run: |
-          echo "CURRENT_DATE=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATETIME=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
@@ -215,13 +220,13 @@ jobs:
           SENDGRID_KEY: ${{ steps.secrets.outputs.sendgrid_key }}
         run: |
           set -e
-          REPORT_NAME="master_report_batch_4_${CURRENT_DATE}.html"
+          REPORT_NAME="master_report_batch_4_${CURRENT_DATETIME}.html"
           python3 -u featured_workspaces_test.py \
             -n "$REPORT_NAME" \
             -b 4 \
             -v \
             --abort_hr 2 \
-            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/" \
+            --gcs_path "gs://terra-featured-workspace-tests-reports/fw_reports/${CURRENT_DATE}/" \
             $([[ "${{ github.event.inputs.mute_notifications }}" == 'true' ]] && echo "--mute_notifications") \
             $([[ "${{ github.event.inputs.troubleshoot }}" == 'true' ]] && echo "--troubleshoot")
   notify-slack:
@@ -231,6 +236,11 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Generate CURRENT_DATETIME
+        id: date
+        run: |
+          echo "CURRENT_DATETIME=$(date +%Y-%m-%d-%H-%M-%S)" >> $GITHUB_ENV
+          echo "CURRENT_DATE=$(date +%Y-%m-%d)" >> $GITHUB_ENV
       - name: Send custom event details to Slack
         uses: slackapi/slack-github-action@v2.0.0
         with:
@@ -238,5 +248,5 @@ jobs:
           webhook-type: webhook-trigger
           payload: |
             is_successful: "${{ github.action_status }}"
-            report_url: "https://storage.googleapis.com/terra-featured-workspace-tests-reports/fw_reports/"
+            report_url: "gs://terra-featured-workspace-tests-reports/fw_reports/${CURRENT_DATE}/"
             run_url: "${{github.run_number}}"
