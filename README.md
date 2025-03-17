@@ -1,7 +1,12 @@
-# terra-featured-workspace-tests
+# TERRA FEATURED WORKSPACES TESTS
 This code is to test that Terra Featured Workspaces are working properly. It generates individual reports for each workspace, as well as a master report listing all the tested workspaces with links to their individual reports. The reports live in a google bucket and are publicly viewable.
 
 Note: Currently this code tests all workflows within a Featured Workspace, but it does not test notebooks.
+
+### Development Notes
+
+1. Tests are divided in 4 batches, there exists this parameter in code `batch_size = 18` that needs to be changed if the number of featured workspaces changes
+2. The tests run periodically every 14 days, but you can dispatch manually through Workflow Dispatcher. 
 
 ### Quickstart
 Prerequisites: You will need python3 and may need to install some packages if you don't have them already. After installing python3 and pip3, you can import packages needed to run these scripts using `sudo pip3 install dataclasses firecloud tenacity`. Alternately, use a Docker instead.
@@ -55,7 +60,7 @@ Or using Docker:
 - run workflow submissions for each workflow in the workspace
 - query the job history of the completed submissions and generate a report
 - publish the report to a google bucket and set permissions to be viewable by anyone
-    - the default google bucket, which you can change using the `--gcs_path` flag, is [gs://dsp-fieldeng/fw_reports/](https://console.cloud.google.com/storage/browser/dsp-fieldeng/fw_reports?project=broad-dsde-dev)
+    - the default google bucket, which you can change using the `--gcs_path` flag, is [gs://terra-featured-workspace-tests-reports/fw_reports/](https://console.cloud.google.com/storage/browser/terra-featured-workspace-tests-reports/fw_reports/)
 
 
 

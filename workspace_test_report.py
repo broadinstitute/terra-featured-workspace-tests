@@ -37,16 +37,17 @@ def clone_workspace(original_project, original_name, clone_project, clone_name=N
         print('\nCloning ' + original_name + ' to ' + clone_name)
 
     # get email address(es) of owner(s) of original workspace
-    response = call_fiss(fapi.get_workspace, 200, original_project, original_name)
+
+    response = call_fiss(fapi.get_workspace, 200, original_project, original_name)  #Ignore the case of requester pays for anvil
     original_owners = response['owners']
 
     # clone the Featured Workspace & check for errors
     call_fiss(clone_workspace_with_bucket_location,
               201,
-              original_project,
-              original_name,
-              clone_project,
-              clone_name,
+              from_namespace=original_project,
+              from_workspace=original_name,
+              to_namespace=clone_project,
+              to_workspace=clone_name,
               bucketLocation='us-central1',
               specialcodes=[409])  # 409 = workspace already exists
 

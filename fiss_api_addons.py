@@ -8,6 +8,8 @@ the README at https://pypi.python.org/pypi/firecloud.
 
 from firecloud import api as fapi
 import json
+
+from six import string_types
 from six.moves.urllib.parse import urlencode, urljoin
 
 def get_workflow_metadata_withInclude(namespace, workspace, submission_id, workflow_id, *keysToInclude):
@@ -90,9 +92,9 @@ def get_workspace_cloudPlatform(namespace, name):
     return fapi.__get(request_url)
 
 def clone_workspace_with_bucket_location(from_namespace, from_workspace, to_namespace, to_workspace, bucketLocation, authorizationDomain="", copyFilesWithPrefix=None):
-    """Clone a FireCloud workspace.
+    """Clone a Terra workspace.
 
-    A clone is a shallow copy of a FireCloud workspace, enabling
+    A clone is a shallow copy of a Terra workspace, enabling
     easy sharing of data, such as TCGA data, without duplication.
 
     Args:
