@@ -1,8 +1,8 @@
-import json
-import time
 import argparse
-from datetime import datetime
+import re
+
 from firecloud import api as fapi
+
 from fiss_fns import call_fiss
 
 
@@ -25,14 +25,8 @@ def cleanup_workspaces(project, match_str=None, age_days=None, verbose=True):
     if verbose:
         print(str(len(ws_all)) + ' workspaces found in project ' + project)
 
-    FMT = '%Y-%m-%d-%H-%M-%S'  # datetime format used in workspace_test_report.py > clone_workspace()
-
-    # select the cloned workspaces older than [age_days] ago
-    ws_to_delete = set()  # collect workspace names to delete in a set (to prevent duplicates)
-    for ws in ws_all:
-        if ws in do_not_delete_workspaces:
-            continue
-        ws_to_delete.add(ws)
+    ws_to_delete = {ws for ws in ws_all if
+                    ws not in do_not_delete_workspaces and re.search(r"\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$", ws)}
 
     # delete those old workspaces
     n_total = len(ws_to_delete)
