@@ -107,6 +107,7 @@ def format_fws(get_info=False, verbose=True):
             continue
 
         if ws_project == 'broad-firecloud-dsde-methods' and ws_name == 'GATK-Structural-Variants-Joint-Calling':
+            print(f'Skipping {ws_project}/{ws_name} for cost savings (FE-359)')
             continue
 
         if verbose:
