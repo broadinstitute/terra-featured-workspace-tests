@@ -106,6 +106,10 @@ def format_fws(get_info=False, verbose=True):
             print(f'Skipping Azure workspace {ws_project}/{ws_name}')
             continue
 
+        if ws_project == 'broad-firecloud-dsde-methods' and ws_name == 'GATK-Structural-Variants-Joint-Calling':
+            print(f'Skipping {ws_project}/{ws_name} for cost savings (FE-359)')
+            continue
+
         if verbose:
             print(ws_name + '\t (billing project: ' + ws_project + ')')
 
